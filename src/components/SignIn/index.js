@@ -49,6 +49,11 @@ class SignInFormBase extends Component {
         event.preventDefault();
     };
 
+    componentWillUnmount() {
+        this.props.firebase.users().off();
+    }
+
+
     onChange = event => {
         this.setState({ [event.target.name]: event.target.value });
     };

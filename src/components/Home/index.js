@@ -76,7 +76,7 @@ class HomePage extends Component {
         var phone = '';
 
         var userListNew = this.state.users_all;
-        console.log(email_id);
+
         Object.keys(userListNew).forEach(function(key) {
             console.log(email_id);
             if (userListNew[key].email == email_id) {

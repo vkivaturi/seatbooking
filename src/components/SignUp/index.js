@@ -68,7 +68,6 @@ class SignUpFormBase extends Component {
         this.props.firebase.users().off();
     }
 
-
     render() {
         const {
             username,
