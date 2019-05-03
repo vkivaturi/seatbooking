@@ -65,9 +65,6 @@ class AdminPage extends Component {
         const { users, bookings, loading } = this.state;
 
         const columnsUser = [{
-            Header: 'User id',
-            accessor: 'uid' // String-based value accessors!
-        }, {
             Header: 'Email',
             accessor: 'email',
 
@@ -75,9 +72,17 @@ class AdminPage extends Component {
             Header: 'User name',
             accessor: 'username',
 
+        }, {
+            Header: 'Phone number',
+            accessor: 'phone',
+
         }]
 
         const columnsBooking = [{
+            Header: 'Email',
+            accessor: 'email_id',
+
+        }, {
             Header: 'User',
             accessor: 'username',
 

@@ -22,6 +22,7 @@ const INITIAL_STATE = {
     isOtherDrop: "disabled",
     otherPickup: '',
     otherDrop: '',
+
 };
 
 const myDivStyle = {
@@ -37,9 +38,9 @@ class HomePage extends Component {
     }
 
     componentDidMount() {
-        //TO DO - A hack to pre fetch all user list
-
-        this.props.firebase.users().on('value', snapshot => {
+        //Fetch user details corresponding to the email id
+        var email_id_loc = document.getElementById("email_field").value;
+        this.props.firebase.db.ref("users").orderByChild("email").equalTo(email_id_loc).on('value', snapshot => {
             const usersObject = snapshot.val();
             const usersList = Object.keys(usersObject).map(key => ({
                 ...usersObject[key],
@@ -145,7 +146,7 @@ class HomePage extends Component {
                 this.setState({ isOtherPickup: "" });
             } else {
                 this.setState({ isOtherPickup: "disabled" });
-                this.setState({otherPickup : ''});
+                this.setState({ otherPickup: '' });
             }
         }
 
@@ -154,7 +155,7 @@ class HomePage extends Component {
                 this.setState({ isOtherDrop: "" });
             } else {
                 this.setState({ isOtherDrop: "disabled" });
-                this.setState({otherDrop : ''});
+                this.setState({ otherDrop: '' });
             }
         }
 
@@ -222,7 +223,7 @@ class HomePage extends Component {
                                         {this.state.pickup_loc_options}
                                         <option>==Other pickup location==</option>
                                     </select>
-                                    
+
                                     <label>Other pickup location</label>
                                     <input
                                         class="form-control"
