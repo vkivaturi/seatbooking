@@ -9,15 +9,42 @@ class AdminPage extends Component {
         super(props);
 
         this.state = {
-            loading: false,
             users: [],
-            bookings: []
+            bookings: [],
+            pickup_date: '',
         };
     }
 
-    componentDidMount() {
-        this.setState({ loading: true });
+    componentWillUnmount() {
+        this.props.firebase.users().off();
+        this.props.firebase.bookings().off();
+    }
 
+    onChange = event => {
+        this.setState({ [event.target.name]: event.target.value });
+    }
+
+    // Fetch bookings for the specific date - input date format is like 03-May
+    fetchBookings = () => {
+        this.props.firebase.db.ref("bookings").orderByChild("pickup_date").equalTo(this.state.pickup_date).on('value', snapshot => {
+            const bookingsObject = snapshot.val();
+
+            if (bookingsObject != null) {
+
+                const bookingsList = Object.keys(bookingsObject).map(key => ({
+                    ...bookingsObject[key],
+                    uidbookingsid: key,
+                }));
+
+                this.setState({
+                    bookings: bookingsList,
+                });
+            }
+        });
+    }
+
+    fetchUsers = () => {
+        console.log("fetch users");
         this.props.firebase.users().on('value', snapshot => {
             const usersObject = snapshot.val();
             if (usersObject != null) {
@@ -33,36 +60,10 @@ class AdminPage extends Component {
 
         });
 
-        this.props.firebase.bookings().on('value', snapshot => {
-            const bookingsObject = snapshot.val();
-
-            if (bookingsObject != null) {
-
-                const bookingsList = Object.keys(bookingsObject).map(key => ({
-                    ...bookingsObject[key],
-                    uidbookingsid: key,
-                }));
-
-                this.setState({
-                    bookings: bookingsList,
-                });
-            }
-        });
-
-        this.setState({
-            loading: false,
-        });
-
-    }
-
-    componentWillUnmount() {
-        this.props.firebase.users().off();
-        this.props.firebase.bookings().off();
-
     }
 
     render() {
-        const { users, bookings, loading } = this.state;
+        const { users, bookings } = this.state;
 
         const columnsUser = [{
             Header: 'Email',
@@ -116,15 +117,24 @@ class AdminPage extends Component {
 
             <div>
                 <h5>Seat bookings</h5>
-                {loading && <div>Loading ...</div>}
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Enter pickup date to search - like 03-May" aria-describedby="basic-addon2" />
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
+                    </div>
+                </div>
+
                 <ReactTable
-                    data={bookings} columns={columnsBooking} filterable='true' defaultPageSize='10'
+                    data={bookings} columns={columnsBooking} filterable='true' defaultPageSize='20'
                 />
 
+                <hr />
+
                 <h5>Registeres users</h5>
-                {loading && <div>Loading ...</div>}
+                <button class="btn btn-primary btn-lg btn-block" onClick={this.fetchUsers}>
+                    Fetch Users</button>
                 <ReactTable
-                    data={users} columns={columnsUser} filterable='true' defaultPageSize='10'
+                    data={users} columns={columnsUser} filterable='true' defaultPageSize='20'
                 />
             </div>
         );

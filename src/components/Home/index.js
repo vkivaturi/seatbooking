@@ -167,7 +167,7 @@ class HomePage extends Component {
         const isInvalid = pickup_date === '' || route_trip === '' || pickup_loc === '' || drop_loc === '';
 
         //Load trip time options
-        var route_trip_list = ['29-Apr', '30-Apr', '02-May', '03-May'];
+        var route_trip_list = ['06-May', '07-May', '08-May', '09-May', '10-May'];
 
         var route_trip_options = Object.keys(route_trip_list).map(function(key) {
             return <option>{route_trip_list[key]}</option>
