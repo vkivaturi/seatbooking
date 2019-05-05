@@ -1,8 +1,13 @@
 import React, { Component } from 'react';
 import ReactTable from 'react-table';
 import 'react-table/react-table.css';
+import { AuthUserContext, withAuthorization } from '../Session';
 
 import { withFirebase } from '../Firebase';
+
+const config = {
+    admins: process.env.REACT_APP_ADMINS,
+};
 
 class AdminPage extends Component {
     constructor(props) {
@@ -26,6 +31,9 @@ class AdminPage extends Component {
 
     // Fetch bookings for the specific date - input date format is like 03-May
     fetchBookings = () => {
+        //Reset firebase connection to trigger search again even if input has not changed
+        this.props.firebase.bookings().off();
+
         this.props.firebase.db.ref("bookings").orderByChild("pickup_date").equalTo(this.state.pickup_date).on('value', snapshot => {
             const bookingsObject = snapshot.val();
 
@@ -44,7 +52,6 @@ class AdminPage extends Component {
     }
 
     fetchUsers = () => {
-        console.log("fetch users");
         this.props.firebase.users().on('value', snapshot => {
             const usersObject = snapshot.val();
             if (usersObject != null) {
@@ -118,7 +125,7 @@ class AdminPage extends Component {
             <div>
                 <h5>Seat bookings</h5>
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Enter pickup date to search - like 03-May" aria-describedby="basic-addon2" />
+                    <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
                     <div class="input-group-append">
                         <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
                     </div>
@@ -141,4 +148,8 @@ class AdminPage extends Component {
     }
 }
 
-export default withFirebase(AdminPage);
+const condition = authUser => !!authUser;
+
+export default withAuthorization(condition)(AdminPage);
+
+//export default withFirebase(AdminPage);

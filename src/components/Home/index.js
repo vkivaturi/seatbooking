@@ -5,6 +5,7 @@ import { AuthUserContext, withAuthorization } from '../Session';
 
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
+import * as UTILS from '../../constants/utils';
 
 const INITIAL_STATE = {
     email_id: '',
@@ -31,25 +32,32 @@ const myDivStyle = {
 };
 
 
+
 class HomePage extends Component {
     constructor(props) {
         super(props);
         this.state = { ...INITIAL_STATE };
     }
 
+
     componentDidMount() {
+
         //Fetch user details corresponding to the email id
         var email_id_loc = document.getElementById("email_field").value;
         this.props.firebase.db.ref("users").orderByChild("email").equalTo(email_id_loc).on('value', snapshot => {
             const usersObject = snapshot.val();
-            const usersList = Object.keys(usersObject).map(key => ({
-                ...usersObject[key],
-                uid: key,
-            }));
+            if (usersObject !== null) {
+                const usersList = Object.keys(usersObject).map(key => ({
+                    ...usersObject[key],
+                    uid: key,
+                }));
 
-            this.setState({
-                users_all: usersList,
-            });
+                this.setState({
+                    users_all: usersList,
+                });
+            } else {
+                console.log("### No users info found for email id : " + email_id_loc);
+            }
         });
     }
 
@@ -78,20 +86,24 @@ class HomePage extends Component {
 
         var userListNew = this.state.users_all;
 
-        Object.keys(userListNew).forEach(function(key) {
-            console.log(email_id);
-            if (userListNew[key].email == email_id) {
-                username = userListNew[key].username;
-                phone = userListNew[key].phone;
-            }
-        });
+        if (userListNew !== null) {
+            Object.keys(userListNew).forEach(function(key) {
+                if (userListNew[key].email == email_id) {
+                    username = userListNew[key].username;
+                    phone = userListNew[key].phone;
+                }
+            });
+        } else {
+            console.log("### Users list is empty for email id : " + email_id);
+        }
+        console.log("sending email " + email_id);
+        //UTILS.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
 
         //Add booking record to database
         this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
             this.setState({ ...INITIAL_STATE });
             this.props.history.push(ROUTES.HOME);
             this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });
-
         }).catch(error => {
             this.setState({ error });
         });

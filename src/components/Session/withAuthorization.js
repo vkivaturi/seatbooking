@@ -6,6 +6,10 @@ import AuthUserContext from './context';
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
 
+const config = {
+  admins: process.env.REACT_APP_ADMINS,
+};
+
 const withAuthorization = condition => Component => {
   class WithAuthorization extends React.Component {
     componentDidMount() {

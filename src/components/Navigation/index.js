@@ -11,12 +11,16 @@ import { AuthUserContext } from '../Session';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 
+const config = {
+  admins: process.env.REACT_APP_ADMINS,
+};
+
 
 const Navigation = () => (
   <div>
     <AuthUserContext.Consumer>
       {authUser =>
-        authUser ? <NavigationAuth /> : <NavigationNonAuth />
+        authUser ? (config.admins.toUpperCase().indexOf(authUser.email.toUpperCase()) ==! -1 ? <NavigationAdminAuth /> : <NavigationAuth />) : (<NavigationNonAuth />)
       }
     </AuthUserContext.Consumer>
   </div>
@@ -51,6 +55,25 @@ const NavigationNonAuth = () => (
     </Nav>
   </Navbar.Collapse>
 </Navbar>
+);
+
+const NavigationAdminAuth = () => (
+<Navbar collapseOnSelect expand="lg" bg="dark" variant="dark">
+<Navbar.Brand href="#home">Seat Booking App</Navbar.Brand>
+  <Navbar.Toggle aria-controls="responsive-navbar-nav" />
+  <Navbar.Collapse id="responsive-navbar-nav">
+    <Nav className="mr-auto">
+      <Nav.Link href={ROUTES.LANDING}>Shuttle home</Nav.Link>
+      <Nav.Link href={ROUTES.HOME}>Book my seat</Nav.Link>
+      <Nav.Link href={ROUTES.ACCOUNT}>My account</Nav.Link>
+      <Nav.Link href={ROUTES.ADMIN}>Admin</Nav.Link>
+    </Nav>
+    <Nav>
+    	<Nav.Link><SignOutButton /></Nav.Link>
+    </Nav>
+  </Navbar.Collapse>
+</Navbar>
+
 );
 
 export default Navigation;
