@@ -6,6 +6,15 @@ const myDivStyle = {
     width: '100%'
 };
 
+const config = {
+    admins: process.env.REACT_APP_ADMINS,
+    contact_email: process.env.REACT_APP_CONTACT_EMAIL,
+    contact_phone: process.env.REACT_APP_CONTACT_PHONE,
+    business_name: process.env.REACT_APP_BUSINESS_NAME,
+    email_login: process.env.REACT_APP_ELASTIC_EMAIL_USERNAME,
+    email_key: process.env.REACT_APP_ELASTIC_EMAIL_API_KEY
+};
+
 const Landing = () => (
     <div class="card" style={myDivStyle}>
         <h3>Shuttle Seat Booking</h3>
@@ -24,7 +33,7 @@ const Landing = () => (
         <SignUpLink />
 
         <p>Please use the Sign In option in menu to get started</p>
-        <p>In case of any assistance, please contact us at <b>xxx@gmail.com</b> or WhatsApp us at <b>xxxxxxxx</b></p>
+        <p>In case of any assistance, please contact us at <b>{config.contact_email}</b> or WhatsApp us at <b>{config.contact_phone}</b></p>
 
     </div>
 );

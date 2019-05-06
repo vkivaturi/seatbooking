@@ -17,9 +17,9 @@ module.exports = {
         };
 
         //Create subject line
-        const subject = "Booking confirmation : " + pickup_date + "-" + pickup_loc + "-" + drop_loc + "-" + route_trip;
+        const subject = "Confirmation --> " + pickup_date + " : " + pickup_loc + " : " + drop_loc + " : " + route_trip;
 
-        var textEmail = "Hi " + username + ", thanks a lot for booking your seat with " + config.business_name + ". Your booking details are : " + subject + ". In case you have any questions related to this booking or if you want to cancel it, please email us at " + config.contact_email + " or WhatsApp at " + config.contact_phone;
+        var textEmail = "Hi " + username + ",  \n\nThanks a lot for booking your seat with " + config.business_name + ". " + subject + ". \n\nIn case you have any questions related to this booking or if you want to cancel it, please email us at " + config.contact_email + " or WhatsApp at " + config.contact_phone + "\n\n";
 
         const htmlEmailEncoded = "&#x3C;html&#x3E;&#x3C;p&#x3E;Hi &#x3C;strong&#x3E;{username}&#x3C;/strong&#x3E;,&#x3C;/p&#x3E; &#x3C;p&#x3E;Thanks a lot for booking your seat with {config.business_name}. Please find below the details of your confirmed booking.&#x3C;/p&#x3E; &#x3C;table style=&#x22;height: 93px; width: 455px;&#x22; border=&#x22;1&#x22;&#x3E; &#x3C;tbody&#x3E; &#x3C;tr&#x3E; &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Pickup date&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{pickup_date}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;tr&#x3E; &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Trip details&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{route_trip}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;tr&#x3E; &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Pickup location&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{pickup_loc}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;tr&#x3E;  &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Drop location&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{drop_loc}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;/tbody&#x3E; &#x3C;/table&#x3E; &#x3C;p&#x3E;In case you have any questions related to this booking or if you want to cancel it, please email us at {config.contact_email} or WhatsApp at {config.contact_phone}.&#x3C;/p&#x3E; &#x3C;p&#x3E;Enjoy your ride!&#x3C;/p&#x3E; &#x3C;p&#x3E;Thank you.&#x3C;/p&#x3E; &#x3C;p&#x3E;Team {config.business_name}&#x3C;/p&#x3E;&#x3C;/html&#x3E";       //Create email body html
         
@@ -50,25 +50,28 @@ module.exports = {
             <p>Thank you.</p>
             <p>Team {config.business_name}</p></html>;
 
-        console.log(config.email_login + config.email_key + config.contact_email + config.business_name + to_email + subject + textEmail);
+        console.log(config.contact_email + config.business_name + to_email + subject + textEmail);
 
         // Prepare email to be sent
         var post_data = querystring.stringify({
             'username': config.email_login,
-            'api_key': config.email_key,
+            'apikey': config.email_key,
             'from': config.contact_email,
-            'from_name': config.business_name,
-            'to': to_email,
+            'fromName': config.business_name,
+            'replyTo': config.contact_email,
+            //'to': to_email,
+            'msgTo': to_email,
+            'msgCC': config.contact_email,
             'subject': subject,
-            'body_html': htmlEmailEncoded
-            //'body_text': textEmail
+            //'bodyHtml': htmlEmailEncoded
+            'bodyText': textEmail
         });
 
         // Object of options.
         var post_options = {
             host: 'api.elasticemail.com',
-            path: '/mailer/send',
-            port: '443',
+            path: '/v2/email/send',
+            //port: '443',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

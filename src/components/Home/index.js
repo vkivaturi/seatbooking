@@ -5,7 +5,7 @@ import { AuthUserContext, withAuthorization } from '../Session';
 
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
-import * as UTILS from '../../constants/utils';
+import * as Utils from '../../constants/utils';
 
 const INITIAL_STATE = {
     email_id: '',
@@ -31,7 +31,9 @@ const myDivStyle = {
     width: '100%'
 };
 
-
+const config = {
+  admins: process.env.REACT_APP_ADMINS,
+};
 
 class HomePage extends Component {
     constructor(props) {
@@ -96,11 +98,13 @@ class HomePage extends Component {
         } else {
             console.log("### Users list is empty for email id : " + email_id);
         }
-        console.log("sending email " + email_id);
-        //UTILS.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
 
         //Add booking record to database
         this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
+            //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
+            if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
+                Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
+            }
             this.setState({ ...INITIAL_STATE });
             this.props.history.push(ROUTES.HOME);
             this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });

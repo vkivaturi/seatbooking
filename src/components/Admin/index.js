@@ -38,7 +38,6 @@ class AdminPage extends Component {
             const bookingsObject = snapshot.val();
 
             if (bookingsObject != null) {
-
                 const bookingsList = Object.keys(bookingsObject).map(key => ({
                     ...bookingsObject[key],
                     uidbookingsid: key,
@@ -46,6 +45,10 @@ class AdminPage extends Component {
 
                 this.setState({
                     bookings: bookingsList,
+                });
+            } else {
+                this.setState({
+                    bookings: [],
                 });
             }
         });
