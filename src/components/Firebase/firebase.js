@@ -42,6 +42,9 @@ class Firebase {
     booking = bookingid => this.db.ref(`bookings/${bookingid}`);
     bookings = () => this.db.ref('bookings');
 
+    // *** Routes API ***
+    route = uid => this.db.ref(`routes/${uid}`);
+    routes = () => this.db.ref('routes');
 
 }
 

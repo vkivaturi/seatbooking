@@ -2,11 +2,22 @@ import React, { Component } from 'react';
 import ReactTable from 'react-table';
 import 'react-table/react-table.css';
 import { AuthUserContext, withAuthorization } from '../Session';
+import AddRoute from './addroute.js';
+import ModifyRoute from './modifyroute.js';
 
 import { withFirebase } from '../Firebase';
+import * as ROUTES from '../../constants/routes';
 
 const config = {
     admins: process.env.REACT_APP_ADMINS,
+};
+
+const INITIAL_STATE = {
+    route_trip: '',
+    pickup_loc: '',
+    drop_loc: '',
+    error: null,
+    successMessageAddRoute: '',
 };
 
 class AdminPage extends Component {
@@ -17,6 +28,10 @@ class AdminPage extends Component {
             users: [],
             bookings: [],
             pickup_date: '',
+            route_trip: '',
+            pickup_loc: '',
+            drop_loc: '',
+
         };
     }
 
@@ -69,7 +84,6 @@ class AdminPage extends Component {
             }
 
         });
-
     }
 
     render() {
@@ -121,11 +135,23 @@ class AdminPage extends Component {
             Header: 'Booking time',
             accessor: 'creation_date',
 
-        }]
+        }];
+
+        const {
+            route_trip,
+            pickup_loc,
+            drop_loc,
+            successMessageAddRoute
+        } = this.state;
+
+        var isInvalidAdd = route_trip === '' || pickup_loc === '' || drop_loc === '';
 
         return (
 
             <div>
+                <div><AddRoute /></div>
+                <div><ModifyRoute /></div>
+
                 <h5>Seat bookings</h5>
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
@@ -140,6 +166,8 @@ class AdminPage extends Component {
 
                 <hr />
 
+
+                <hr />
                 <h5>Registeres users</h5>
                 <button class="btn btn-primary btn-lg btn-block" onClick={this.fetchUsers}>
                     Fetch Users</button>
