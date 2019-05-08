@@ -6,7 +6,8 @@ import Tab from 'react-bootstrap/Tab';
 import 'react-table/react-table.css';
 import { AuthUserContext, withAuthorization } from '../Session';
 import AddRoute from './addroute.js';
-import ModifyRoute from './modifyroute.js';
+import DeleteRoute from './deleteroute.js';
+import UpdateRoute from './updateroute.js';
 
 import { withFirebase } from '../Firebase';
 //import * as ROUTES from '../../constants/routes';
@@ -177,12 +178,22 @@ class AdminPage extends Component {
                             </div>
                         </div>
                     </Tab>
+                    <Tab eventKey="updateroute" title="Update route">
+                        <div class="card" style={myDivStyle} id="updateroute">
+                            <div class="card-header">
+                                Update existing route </div>
+                            <div class="card-body" >
+                                <UpdateRoute />
+                            </div>
+                        </div>
+
+                    </Tab>
                     <Tab eventKey="deleteroute" title="Delete route">
                         <div class="card" style={myDivStyle} id="deleteroute">
                             <div class="card-header">
                                 Delete existing route </div>
                             <div class="card-body" >
-                                <ModifyRoute />
+                                <DeleteRoute />
                             </div>
                         </div>
 

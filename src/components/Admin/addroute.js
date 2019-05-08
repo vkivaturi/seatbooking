@@ -12,6 +12,7 @@ const INITIAL_STATE = {
     drop_locations: '',
     error: null,
     successMessageAddRoute: '',
+    route_capacity: '',
 };
 
 //Add route with pickup and destination locations
@@ -26,6 +27,7 @@ class AddRoute extends Component {
             route_trip: '',
             pickup_locations: '',
             drop_locations: '',
+            route_capacity: '',
         };
     }
 
@@ -45,6 +47,7 @@ class AddRoute extends Component {
             route_trip,
             pickup_locations,
             drop_locations,
+            route_capacity,
             error,
         } = this.state;
 
@@ -58,7 +61,7 @@ class AddRoute extends Component {
         var creation_date = new Intl.DateTimeFormat('en-US', options).format(Date.now());
 
         //Add booking record to database
-        this.props.firebase.route(Date.now()).set({ route_trip, pickup_locations, drop_locations, creation_date, }).then(() => {
+        this.props.firebase.route(Date.now()).set({ route_trip, pickup_locations, drop_locations, creation_date, route_capacity }).then(() => {
             this.setState({ ...INITIAL_STATE });
             this.setState({ successMessageAddRoute: <div class="alert alert-success alert-dismissible" role="alert">New route is added succesfully.</div> });
         }).catch(error => {
@@ -72,14 +75,18 @@ class AddRoute extends Component {
             pickup_locations,
             drop_locations,
             successMessageAddRoute,
+            route_capacity,
             error
         } = this.state;
 
-        var isInvalidAdd = route_trip === '' || pickup_locations === '' || drop_locations === '';
+        var isInvalidAdd = route_trip === '' || pickup_locations === '' || drop_locations === '' || route_capacity === '';
 
         return (<div class="form-group">
             <div>
+                <div id="successMessageId">{successMessageAddRoute}</div>
+                <p></p>
                 <div class="form-row">
+
                     <label for="route_trip">Route name</label>
                     <input
                         class="form-control"
@@ -92,6 +99,19 @@ class AddRoute extends Component {
                 </div>
 
                 <div class="form-row">
+                    <label for="route_capacity">Max number of seats</label>
+                    <input
+                        class="form-control"
+                        name="route_capacity"
+                        value={route_capacity}
+                        onChange={this.onChange}
+                        type="number"
+                        min="0"
+                        max="50"
+                    />
+                </div>
+
+                <div class="form-row">
                     <label for="pickup_locations">Pickup locations</label>
                     <input
                         class="form-control"
@@ -100,7 +120,7 @@ class AddRoute extends Component {
                         onChange={this.onChange}
                         type="text"
                     />
-                    <small id="pickup_loc_help" class="form-text text-muted">Maintain order of stops. Sample format: Deloitte Meenakshi towers, Mindspace Park Near Building 3, Mindspace building 12 C</small>
+                    <small id="pickup_loc_help" class="form-text text-muted">Maintain order of stops. Sample format: Deloitte Meenakshi towers,Mindspace Park Near Building 3,Mindspace building 12 C</small>
                 </div>
 
                 <div class="form-row">
@@ -112,13 +132,12 @@ class AddRoute extends Component {
                         onChange={this.onChange}
                         type="text"
                     />
-                    <small id="drop_loc_help" class="form-text text-muted">Maintain order of stope. Sample format: Manjeera Dimond Towers, Aparna Sarovar, Aparna Sarovar Grande</small>
+                    <small id="drop_loc_help" class="form-text text-muted">Maintain order of stope. Sample format: Manjeera Dimond Towers,Aparna Sarovar,Aparna Sarovar Grande</small>
                 </div>
 
             </div>
 
             <p></p>
-            <div id="successMessageId">{successMessageAddRoute}</div>
             <div class="form-row">
                 <button disabled={isInvalidAdd} class="btn btn-success btn-lg btn-block" onClick={this.onAddRoute}>
                     Create route

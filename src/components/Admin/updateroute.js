@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import * as ROUTES from '../../constants/routes';
 import { withFirebase } from '../Firebase';
+import * as UTILS from '../../constants/utils';
 
 const config = {
     admins: process.env.REACT_APP_ADMINS,
@@ -11,26 +12,20 @@ const INITIAL_STATE = {
     pickup_locations: '',
     drop_locations: '',
     error: null,
-    successMessageAddRoute: '',
-    pickup_loc: '',
-    drop_loc: '',
-    routesList: []
+    successMessageUpdateRoute: '',
+    route_capacity: '',
+    routesList: [],
+    pickup_date: '',
+    route_trip_list: [],
+    route_trip_options: [],
+
 };
 
 //Perform modifications to an existing route. Update and delete are the allowed modifications
-class ModifyRoute extends Component {
+class UpdateRoute extends Component {
     constructor(props) {
         super(props);
-
-        this.state = {
-            pickup_date: '',
-            route_trip_list: [],
-            route_trip: '',
-            pickup_loc: '',
-            drop_loc: '',
-            route_trip_options: [],
-            routesList: [],
-        };
+        this.state = { ...INITIAL_STATE };
     }
 
     componentWillUnmount() {
@@ -39,6 +34,10 @@ class ModifyRoute extends Component {
 
     componentDidMount() {
         //Load all routes and populate the options list with options
+        this.loadRoutes();
+    }
+
+    loadRoutes() {
         this.props.firebase.routes().on('value', snapshot => {
             const routesObject = snapshot.val();
             if (routesObject != null) {
@@ -56,70 +55,54 @@ class ModifyRoute extends Component {
                 this.setState({ route_trip_options: route_names });
             }
         });
+
     }
 
     onChange = event => {
+
         this.setState({ [event.target.name]: event.target.value });
         this.setState({ successMessageUpdateRoute: '', successMessageDeleteRoute: '', error: '' });
 
-        //For the selected route trip, load the respective pickup and drop locations
-        var routesListLocal = this.state.routesList;
-        var pickup_loc_local, drop_loc_local, route_trip_local, routes_key_local;
-
         if (event.target.name == 'route_trip_list') {
+            //For the selected route trip, load the respective pickup and drop locations
+            var routesListLocal = this.state.routesList;
+            var pickup_loc_local, drop_loc_local, route_trip_local, routes_key_local, route_capacity_local, creation_date_local;
+
             //Fetch pickup and drop locations for the selected route
             Object.keys(routesListLocal).map(function(key) {
-                console.log("inside for :: " + routesListLocal[key].route_trip + " ::" + event.target.value);
+                console.log(routesListLocal[key]);
                 if (routesListLocal[key].route_trip === event.target.value) {
                     pickup_loc_local = routesListLocal[key].pickup_locations;
                     drop_loc_local = routesListLocal[key].drop_locations;
                     route_trip_local = routesListLocal[key].route_trip;
                     routes_key_local = routesListLocal[key].routeid;
+                    route_capacity_local = routesListLocal[key].route_capacity;
+                    creation_date_local = routesListLocal[key].creation_date;
                 }
             });
+            //Display the pickup and drop locations in input boxes for modify or delete
+            this.setState({ pickup_locations: pickup_loc_local, drop_locations: drop_loc_local, route_trip: route_trip_local, routes_key: routes_key_local, route_capacity: route_capacity_local, creation_date: creation_date_local });
         }
-        //Display the pickup and drop locations in input boxes for modify or delete
-        this.setState({ pickup_loc: pickup_loc_local, drop_loc: drop_loc_local, route_trip: route_trip_local, routes_key: routes_key_local });
-        console.log("route_trip_local :: " + route_trip_local);
-
-    }
-
-    //Delete route selected by the admin user
-    onDeleteRoute = event => {
-        var delete_key = this.state.routes_key;
-        console.log("$$$ Deleting route :: " + delete_key + " :: " + this.state.route_trip);
-        this.props.firebase.route(delete_key).remove().then(() => {
-            this.setState({ ...INITIAL_STATE });
-            this.setState({ successMessageDeleteRoute: <div class="alert alert-success alert-dismissible" role="alert">Selected route is deleted successfully.</div> });
-        }).catch(error => {
-            this.setState({ error });
-        });
     }
 
     onUpdateRoute = event => {
-    }
-
-    onAddRoute = event => {
         const {
             route_trip,
             pickup_locations,
             drop_locations,
             error,
+            routes_key,
+            route_capacity,
+            creation_date
         } = this.state;
 
-        var options = {
-            year: 'numeric', month: 'numeric', day: 'numeric',
-            hour: 'numeric', minute: 'numeric', second: 'numeric',
-            hour12: false
-        };
-
-        //Convert date into easy to read format
-        var creation_date = new Intl.DateTimeFormat('en-US', options).format(Date.now());
-
-        //Add booking record to database
-        this.props.firebase.route(Date.now()).set({ route_trip, pickup_locations, drop_locations, creation_date, }).then(() => {
+        var updatedDate = UTILS.formattedCurrentDate();
+        console.log(route_trip + pickup_locations + drop_locations + creation_date + route_capacity + updatedDate);
+        //Update the selected route
+        this.props.firebase.route(routes_key).set({ route_trip, pickup_locations, drop_locations, creation_date, route_capacity, updatedDate }).then(() => {
             this.setState({ ...INITIAL_STATE });
-            this.setState({ successMessageAddRoute: <div class="alert alert-success alert-dismissible" role="alert">New route is added succesfully.</div> });
+            this.setState({ successMessageUpdateRoute: <div class="alert alert-success alert-dismissible" role="alert">Route is updated succesfully.</div> });
+            this.loadRoutes();
         }).catch(error => {
             this.setState({ error });
         });
@@ -130,18 +113,21 @@ class ModifyRoute extends Component {
             route_trip_list,
             route_trip_options,
             route_trip,
-            pickup_loc,
-            drop_loc,
+            pickup_locations,
+            drop_locations,
             successMessageUpdateRoute,
             successMessageDeleteRoute,
-            error
+            error,
+            route_capacity
         } = this.state;
 
-        var isInvalidDelete = route_trip === '';
-        var isInvalidUpdate = route_trip === '' || pickup_loc === '' || drop_loc === '';
+        var isInvalidUpdate = route_trip === '' || pickup_locations === '' || drop_locations === '' || route_capacity === '';
 
         return (<div class="form-group">
             <div>
+                <div id="successMessageId">{successMessageUpdateRoute}</div>
+                <p></p>
+
                 <div class="form-row">
                     <label for="route_trip_list">Select a route from below list</label>
                     <select id="route_trip_list" name="route_trip_list" class="form-control" onChange={this.onChange}>
@@ -155,14 +141,27 @@ class ModifyRoute extends Component {
                 </div>
 
                 <div class="form-row">
+                    <label for="route_capacity">Max number of seats</label>
+                    <input
+                        class="form-control"
+                        name="route_capacity"
+                        value={this.state.route_capacity}
+                        onChange={this.onChange}
+                        type="number"
+                        min="0"
+                        max="50"
+                    />
+                </div>
+
+                <div class="form-row">
                     <label>Pickup location</label>
                     <input
                         class="form-control"
-                        name="pickup_loc"
-                        value={this.state.pickup_loc}
+                        name="pickup_locations"
+                        value={this.state.pickup_locations}
                         onChange={this.onChange}
                         type="text"
-                        id="pickup_loc"
+                        id="pickup_locations"
                         disabled={!!this.state.isRouteSelected}
                     />
                 </div>
@@ -170,20 +169,18 @@ class ModifyRoute extends Component {
                     <label>Drop location</label>
                     <input
                         class="form-control"
-                        name="drop_loc"
-                        value={this.state.drop_loc}
+                        name="drop_locations"
+                        value={this.state.drop_locations}
                         onChange={this.onChange}
                         type="text"
-                        id="drop_loc"
+                        id="drop_locations"
                         disabled={!!this.state.isRouteSelected}
                     />
                 </div>
                 <br />
-                <div id="successMessageId">{successMessageDeleteRoute}</div>
-                <br />
                 <div class="form-row">
-                    <button disabled={isInvalidDelete} class="btn btn-danger btn-lg btn-block" onClick={this.onDeleteRoute}>
-                        Delete route
+                    <button disabled={isInvalidUpdate} class="btn btn-warning btn-lg btn-block" onClick={this.onUpdateRoute}>
+                        Update route
                             </button>
                 </div>
                 <br />
@@ -195,4 +192,4 @@ class ModifyRoute extends Component {
 }
 
 // Exporting the component 
-export default withFirebase(ModifyRoute);
+export default withFirebase(UpdateRoute);

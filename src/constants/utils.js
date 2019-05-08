@@ -3,6 +3,17 @@ var https = require('https');
 var React = require('react');
 
 module.exports = {
+    formattedCurrentDate: function() {
+        var options = {
+            year: 'numeric', month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: 'numeric', second: 'numeric',
+            hour12: false
+        };
+
+        //Convert date into easy to read format
+        return new Intl.DateTimeFormat('en-US', options).format(Date.now());
+
+    },
     sendElasticEmail: function(route_trip, username, pickup_date, pickup_loc, drop_loc, to_email) {
 
         // Make sure to add your username and api_key below.
