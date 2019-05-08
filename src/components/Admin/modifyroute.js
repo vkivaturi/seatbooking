@@ -178,15 +178,6 @@ class ModifyRoute extends Component {
                         disabled={!!this.state.isRouteSelected}
                     />
                 </div>
-                <div class="form-row">
-                    <div id="successMessageId">{successMessageUpdateRoute}</div>
-                    <br />
-                </div>
-                <div class="form-row">
-                    <button disabled={isInvalidUpdate} class="btn btn-warning btn-lg btn-block" onClick={this.onUpdateRoute}>
-                        Update route
-                            </button>
-                </div>
                 <br />
                 <div id="successMessageId">{successMessageDeleteRoute}</div>
                 <br />

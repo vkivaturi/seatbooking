@@ -23,6 +23,8 @@ const INITIAL_STATE = {
     isOtherDrop: "disabled",
     otherPickup: '',
     otherDrop: '',
+    trip_slot_options: [],
+    routesList: [],
 
 };
 
@@ -32,7 +34,7 @@ const myDivStyle = {
 };
 
 const config = {
-  admins: process.env.REACT_APP_ADMINS,
+    admins: process.env.REACT_APP_ADMINS,
 };
 
 class HomePage extends Component {
@@ -61,6 +63,9 @@ class HomePage extends Component {
                 console.log("### No users info found for email id : " + email_id_loc);
             }
         });
+
+        //Load all routes
+        this.fetchRoutes();
     }
 
     componentWillUnmount() {
@@ -119,43 +124,17 @@ class HomePage extends Component {
     onChange = event => {
         this.setState({ [event.target.name]: event.target.value });
 
-        // TO DO - This is a hack. Unable to find any other way to capture email id or reset success message
+
         this.setState({
             email_id: document.getElementById("email_field").value
         });
         this.setState({ successMessage: '' });
 
-        // If trip is changed, set the pickup and drop lists accordingly
-
-        // TO DO - Ugly code. Need to be optimized
-
-        //Location list 1 
-        var location1 = ['Manjeera Dimond Towers', 'Aparna Sarovar', 'Aparna Sarovar Grande', 'Hima Sai Lake View Towers', 'Aparna Cyberlife', 'Sai Raghavendra Magnificient Habitat', 'Aparna Cyber Commune', 'Aparna Cyber Zon'];
-        var location1_options = Object.keys(location1).map(function(key) {
-            return <option>{location1[key]}</option>
-        });
-
-        //Locaton list 2
-        var location2 = ['Deloitte Meenakshi towers', 'Mindspace Park Near Building 3', 'Mindspace building 12 C', 'Salarpuria Knowledge City Gate', 'Lemon Tree', 'Cyber Gateway', 'Shilparamam', 'Salarpuria Cyber Park, Oracle New Campus'];
-        var location2_options = Object.keys(location2).map(function(key) {
-            return <option>{location2[key]}</option>
-        });
-
+        //Fetch pickup and drop locations if route trip is changed
         if (event.target.name == 'route_trip') {
-            // Reset pickup and drop list boxes
-            this.setState({ pickup_loc_options: ' ' });
-            this.setState({ drop_loc_options: ' ' });
-
-            if (event.target.value.includes(" AM ")) {
-                this.setState({ pickup_loc_options: location1_options });
-                this.setState({ drop_loc_options: location2_options });
-            };
-
-            if (event.target.value.includes(" PM ")) {
-                this.setState({ pickup_loc_options: location2_options.reverse() });
-                this.setState({ drop_loc_options: location1_options.reverse() });
-            }
+            this.fetchLocations(event.target.value);
         }
+
         //Manage the manual edit of pickup and drop options
         if (event.target.name == 'pickup_loc') {
             if (event.target.value == '==Other pickup location==') {
@@ -177,6 +156,59 @@ class HomePage extends Component {
 
     };
 
+    fetchRoutes = () => {
+        //Load all routes and populate the options list with options
+        this.props.firebase.routes().on('value', snapshot => {
+            const routesObject = snapshot.val();
+            if (routesObject != null) {
+                const routesListLocal = Object.keys(routesObject).map(key => ({
+                    ...routesObject[key],
+                    routeid: key,
+                }));
+                this.setState({ routesList: routesListLocal });
+
+                //Fetch route names from the list
+                var route_names = Object.keys(routesListLocal).map(function(key) {
+                    return <option>{routesListLocal[key].route_trip}</option>
+                });
+                //Assign route names to the dropdown box
+                this.setState({ trip_slot_options: route_names });
+            }
+        });
+    }
+
+    fetchLocations = (selectedRoute) => {
+        //Fetch pickup and drop locations for the selected
+        var routesListLocal = this.state.routesList;
+        var pickup_loc_local, drop_loc_local;
+        
+        // Reset pickup and drop list boxes
+        this.setState({ pickup_loc_options: ' ' });
+        this.setState({ drop_loc_options: ' ' });
+
+        Object.keys(routesListLocal).map(function(key) {
+            if (routesListLocal[key].route_trip === selectedRoute) {
+                console.log("inside 2 ");
+                pickup_loc_local = routesListLocal[key].pickup_locations;
+                drop_loc_local = routesListLocal[key].drop_locations;
+            }
+        });
+
+        var location1 = pickup_loc_local.split(',');
+        var location1_options = Object.keys(location1).map(function(key) {
+            return <option>{location1[key]}</option>
+        });
+
+        var location2 = drop_loc_local.split(',');
+        var location2_options = Object.keys(location2).map(function(key) {
+            return <option>{location2[key]}</option>
+        });
+
+        this.setState({ pickup_loc_options: location1_options });
+        this.setState({ drop_loc_options: location2_options });
+    }
+
+
     render() {
         const { email_id, password, error, route_trip, pickup_loc, drop_loc, successMessage, pickup_date } = this.state;
 
@@ -188,13 +220,6 @@ class HomePage extends Component {
         var route_trip_options = Object.keys(route_trip_list).map(function(key) {
             return <option>{route_trip_list[key]}</option>
         });
-
-        //Load trip slots
-        var trip_slot_list = ['08:00 AM - Nallagandla to Hitec City', '10:15 AM - Nallagandla to Hitec City', '05:30 PM - Hitec City to Nallagandla', '07:30 PM - Hitec City to Nallagandla'];
-        var trip_slot_options = Object.keys(trip_slot_list).map(function(key) {
-            return <option>{trip_slot_list[key]}</option>
-        });
-
 
         return (
 
@@ -229,7 +254,7 @@ class HomePage extends Component {
                                     <label for="route_trip">Select your trip</label>
                                     <select id="route_trip" name="route_trip" class="form-control" onChange={this.onChange}>
                                         <option></option>
-                                        {trip_slot_options}
+                                        {this.state.trip_slot_options}
 
                                     </select>
 

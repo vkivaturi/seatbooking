@@ -1,23 +1,23 @@
 import React, { Component } from 'react';
 import ReactTable from 'react-table';
+import Tabs from 'react-bootstrap/Tabs';
+import Tab from 'react-bootstrap/Tab';
+
 import 'react-table/react-table.css';
 import { AuthUserContext, withAuthorization } from '../Session';
 import AddRoute from './addroute.js';
 import ModifyRoute from './modifyroute.js';
 
 import { withFirebase } from '../Firebase';
-import * as ROUTES from '../../constants/routes';
+//import * as ROUTES from '../../constants/routes';
 
 const config = {
     admins: process.env.REACT_APP_ADMINS,
 };
 
-const INITIAL_STATE = {
-    route_trip: '',
-    pickup_loc: '',
-    drop_loc: '',
-    error: null,
-    successMessageAddRoute: '',
+const myDivStyle = {
+    border: '3px solid black',
+    width: '100%'
 };
 
 class AdminPage extends Component {
@@ -137,43 +137,57 @@ class AdminPage extends Component {
 
         }];
 
-        const {
-            route_trip,
-            pickup_loc,
-            drop_loc,
-            successMessageAddRoute
-        } = this.state;
-
-        var isInvalidAdd = route_trip === '' || pickup_loc === '' || drop_loc === '';
-
         return (
-
             <div>
-                <div><AddRoute /></div>
-                <div><ModifyRoute /></div>
+                <Tabs defaultActiveKey="bookings">
+                    <Tab eventKey="bookings" title="Bookings">
+                        <div id="bookings">
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
+                                    <div class="input-group-append">
+                                        <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
+                                    </div>
+                                </div>
 
-                <h5>Seat bookings</h5>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
-                    </div>
-                </div>
+                                <ReactTable
+                                    data={bookings} columns={columnsBooking} filterable='true' defaultPageSize='20'
+                                />
+                            </div>
 
-                <ReactTable
-                    data={bookings} columns={columnsBooking} filterable='true' defaultPageSize='20'
-                />
+                    </Tab>
+                    <Tab eventKey="listusers" title="Users">
+                        <div class="card" style={myDivStyle} id="listusers">
+                            <div class="card-header">
+                                Registered users </div>
+                            <div class="card-body" >
+                                <button class="btn btn-primary btn-lg btn-block" onClick={this.fetchUsers}>
+                                    Fetch Users</button><br/>
+                                <ReactTable
+                                    data={users} columns={columnsUser} filterable='true' defaultPageSize='20'
+                                />
+                            </div>
+                        </div>
+                    </Tab>
+                    <Tab eventKey="addroute" title="Add route">
+                        <div class="card" style={myDivStyle} id="addroute">
+                            <div class="card-header">
+                                Add new route </div>
+                            <div class="card-body" >
+                                <AddRoute />
+                            </div>
+                        </div>
+                    </Tab>
+                    <Tab eventKey="deleteroute" title="Delete route">
+                        <div class="card" style={myDivStyle} id="deleteroute">
+                            <div class="card-header">
+                                Delete existing route </div>
+                            <div class="card-body" >
+                                <ModifyRoute />
+                            </div>
+                        </div>
 
-                <hr />
-
-
-                <hr />
-                <h5>Registeres users</h5>
-                <button class="btn btn-primary btn-lg btn-block" onClick={this.fetchUsers}>
-                    Fetch Users</button>
-                <ReactTable
-                    data={users} columns={columnsUser} filterable='true' defaultPageSize='20'
-                />
+                    </Tab>
+                </Tabs>
             </div>
         );
     }
@@ -181,6 +195,6 @@ class AdminPage extends Component {
 
 const condition = authUser => !!authUser;
 
-export default withAuthorization(condition)(AdminPage);
+export default withAuthorization(condition)(withFirebase(AdminPage));
 
 //export default withFirebase(AdminPage);
