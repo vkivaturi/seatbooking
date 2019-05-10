@@ -46,6 +46,10 @@ class Firebase {
     route = uid => this.db.ref(`routes/${uid}`);
     routes = () => this.db.ref('routes');
 
+    // *** Route seats API ***
+    seat = seatid => this.db.ref(`seats/${seatid}`);
+    seats = () => this.db.ref('seats');
+
 }
 
 export default Firebase;

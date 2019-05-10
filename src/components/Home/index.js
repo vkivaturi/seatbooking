@@ -25,7 +25,11 @@ const INITIAL_STATE = {
     otherDrop: '',
     trip_slot_options: [],
     routesList: [],
-
+    route_capacity: '',
+    route_seats_booked: 0,
+    route_seats_creation_date: '',
+    route_seats_seatid: '',
+    route_seats_action: '',
 };
 
 const myDivStyle = {
@@ -45,7 +49,6 @@ class HomePage extends Component {
 
 
     componentDidMount() {
-
         //Fetch user details corresponding to the email id
         var email_id_loc = document.getElementById("email_field").value;
         this.props.firebase.db.ref("users").orderByChild("email").equalTo(email_id_loc).on('value', snapshot => {
@@ -65,17 +68,20 @@ class HomePage extends Component {
         });
 
         //Load all routes
-        this.fetchRoutes();
+        //this.fetchRoutes();
     }
 
     componentWillUnmount() {
         this.props.firebase.bookings().off();
         this.props.firebase.users().off();
+        this.props.firebase.seats().off();
     }
 
+    //Submit is called when booking request button is clicked by user
     onSubmit = event => {
         const { name, authUser, route_trip, email_id, pickup_date } = this.state;
         var { pickup_loc, drop_loc } = this.state;
+        var availabilityStatus = { isAvailable: false, message: '' };
 
         var pickup_loc = (this.state.otherPickup != '') ? this.state.otherPickup : pickup_loc;
         var drop_loc = (this.state.otherDrop != '') ? this.state.otherDrop : drop_loc;
@@ -104,18 +110,50 @@ class HomePage extends Component {
             console.log("### Users list is empty for email id : " + email_id);
         }
 
-        //Add booking record to database
-        this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
-            //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
-            if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
-                Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
-            }
+        //Check if the selected route has seat availability
+        availabilityStatus = this.checkAndUpdateAvailableSeats(pickup_date, route_trip, this.state.route_capacity);
+
+        //Check based on isAvailable is failing again as we cannot trigger 2 sequential calls with Firebase
+        //if (availabilityStatus.isAvailable) {
+        if (this.state.route_seats_action === 'CREATE' || this.state.route_seats_action === 'UPDATE') {
+            //Add booking record to database
+            this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
+                //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
+                if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
+                    Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
+                }
+                this.setState({ ...INITIAL_STATE });
+                this.props.history.push(ROUTES.HOME);
+                this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });
+            }).catch(error => {
+                this.setState({ error });
+            });
+
+            //TO DO - Hack to reset the date drop down
+            document.getElementById("pickup_date").selectedIndex = 0;
+
+        } else {
+            //No seats are available    
             this.setState({ ...INITIAL_STATE });
             this.props.history.push(ROUTES.HOME);
-            this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });
-        }).catch(error => {
-            this.setState({ error });
-        });
+
+            //TO DO - Hack to reset the date drop down
+            document.getElementById("pickup_date").selectedIndex = 0;
+
+            this.setState({ successMessage: availabilityStatus.message });
+        }
+        //Add booking record to database
+        // this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
+        //     //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
+        //     if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
+        //         Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
+        //     }
+        //     this.setState({ ...INITIAL_STATE });
+        //     this.props.history.push(ROUTES.HOME);
+        //     this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });
+        // }).catch(error => {
+        //     this.setState({ error });
+        // });
 
         event.preventDefault();
 
@@ -124,20 +162,28 @@ class HomePage extends Component {
     onChange = event => {
         this.setState({ [event.target.name]: event.target.value });
 
-
         this.setState({
             email_id: document.getElementById("email_field").value
         });
         this.setState({ successMessage: '' });
 
+        //Fetch all routes when pickup date is changed
+        if (event.target.name === 'pickup_date') {
+            this.fetchRoutes();
+        }
+
         //Fetch pickup and drop locations if route trip is changed
-        if (event.target.name == 'route_trip') {
+        if (event.target.name === 'route_trip') {
             this.fetchLocations(event.target.value);
         }
 
         //Manage the manual edit of pickup and drop options
-        if (event.target.name == 'pickup_loc') {
-            if (event.target.value == '==Other pickup location==') {
+        if (event.target.name === 'pickup_loc') {
+            //Overloading this event since there is no other way to load firebase data for seat checking availability. 
+            //It is not possible to load seat availability data and perform checks on submit due to asynchronous nature of firebase API calls
+            this.decideActionOnAvailability(this.state.pickup_date, this.state.route_trip, this.state.route_capacity);
+
+            if (event.target.value === '==Other pickup location==') {
                 this.setState({ isOtherPickup: "" });
             } else {
                 this.setState({ isOtherPickup: "disabled" });
@@ -145,8 +191,8 @@ class HomePage extends Component {
             }
         }
 
-        if (event.target.name == 'drop_loc') {
-            if (event.target.value == '==Other drop location==') {
+        if (event.target.name === 'drop_loc') {
+            if (event.target.value === '==Other drop location==') {
                 this.setState({ isOtherDrop: "" });
             } else {
                 this.setState({ isOtherDrop: "disabled" });
@@ -180,17 +226,17 @@ class HomePage extends Component {
     fetchLocations = (selectedRoute) => {
         //Fetch pickup and drop locations for the selected
         var routesListLocal = this.state.routesList;
-        var pickup_loc_local, drop_loc_local;
-        
+        var pickup_loc_local, drop_loc_local, route_capacity_local;
+
         // Reset pickup and drop list boxes
         this.setState({ pickup_loc_options: ' ' });
         this.setState({ drop_loc_options: ' ' });
 
         Object.keys(routesListLocal).map(function(key) {
             if (routesListLocal[key].route_trip === selectedRoute) {
-                console.log("inside 2 ");
                 pickup_loc_local = routesListLocal[key].pickup_locations;
                 drop_loc_local = routesListLocal[key].drop_locations;
+                route_capacity_local = routesListLocal[key].route_capacity;
             }
         });
 
@@ -206,7 +252,100 @@ class HomePage extends Component {
 
         this.setState({ pickup_loc_options: location1_options });
         this.setState({ drop_loc_options: location2_options });
+        this.setState({ route_capacity: route_capacity_local });
+
     }
+
+    //This functions decides how to track seat availability for the specific date and route
+    decideActionOnAvailability = (pickup_date, route_trip, route_capacity) => {
+        //Fetch all routes for the given date and set the action flag based on date+route+seats situation
+
+        var route_seats_booked_local, route_seats_creation_date_local, route_seats_seatid_local, route_seats_action_local;
+
+        this.props.firebase.db.ref("seats").orderByChild("pickup_date").equalTo(pickup_date).on('value', snapshot => {
+            const seatsObject = snapshot.val();
+            if (seatsObject !== null) {
+                const seatsRouteList = Object.keys(seatsObject).map(key => ({
+                    ...seatsObject[key],
+                    seatid: key,
+                }));
+
+                Object.keys(seatsRouteList).map(function(key) {
+                    if (seatsRouteList[key].route_trip === route_trip) {
+                        if (seatsRouteList[key].booked_seats < route_capacity) {
+                            route_seats_booked_local = seatsRouteList[key].booked_seats + 1;
+                            route_seats_creation_date_local = seatsRouteList[key].creation_date;
+                            route_seats_seatid_local = seatsRouteList[key].seatid;
+
+                            route_seats_action_local = 'UPDATE';
+                        } else {
+                            route_seats_action_local = 'REJECT';
+                        }
+                    } else {
+                        route_seats_action_local = 'CREATE';
+                    }
+                });
+            } else {
+                route_seats_action_local = 'CREATE';
+            }
+
+            //Set the state variable so that data can be accessed during submit
+            this.setState({
+                route_seats_booked: route_seats_booked_local,
+                route_seats_creation_date: route_seats_creation_date_local,
+                route_seats_seatid: route_seats_seatid_local,
+                route_seats_action: route_seats_action_local,
+            });
+
+        });
+    }
+
+    checkAndUpdateAvailableSeats = (pickup_date, route_trip, route_capacity) => {
+
+        var actionNeeded = this.state.route_seats_action;
+        var availabilityStatus = { isAvailable: false, message: '' };
+
+        if (actionNeeded === 'CREATE') {
+            //Set the booked seats value to 1
+            var creation_date = Utils.formattedCurrentDate();
+            var update_date = creation_date;
+            var booked_seats = 1;
+
+            console.log("## First date and route : " + pickup_date, route_trip, booked_seats, creation_date, update_date);
+            this.props.firebase.seat(Date.now()).set({ pickup_date, route_trip, booked_seats, creation_date, update_date }).then(() => {
+
+                availabilityStatus.isAvailable = true;
+                availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-success alert-dismissible" role="alert">Seats are available in this route. Please go ahead and book now!!</div></small>;
+
+            }).catch(error => {
+                availabilityStatus.isAvailable = true;
+                availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-warning alert-dismissible" role="alert">Error fetching seat availability details. You may still be able to book</div></small>;
+            });
+        } else if (actionNeeded === 'UPDATE') {
+            var update_date = Utils.formattedCurrentDate();
+
+            //Move state variable to local as database insert needs correct field names
+            var seatid = this.state.route_seats_seatid;
+            var creation_date = this.state.route_seats_creation_date;
+            var booked_seats = this.state.route_seats_booked;
+
+            this.props.firebase.seat(seatid).set({ pickup_date, route_trip, creation_date, booked_seats, update_date }).then(() => {
+                availabilityStatus.isAvailable = true;
+            }).catch(error => {
+                availabilityStatus.isAvailable = false;
+                availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-warning alert-dismissible" role="alert">Error fetching seat availability details. You may still be able to book</div></small>;
+            });
+
+        } else if (actionNeeded === 'REJECT') {
+            availabilityStatus.isAvailable = false;
+            availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-danger alert-dismissible" role="alert">We are sorry, all seats are booked on this route for the selected date. Kindly contact support team in case you need further assistance</div></small>;
+        } else {
+            console.log("## Something went wrong in identifying the action needed on available seats");
+        }
+
+        return availabilityStatus;
+    }
+
 
 
     render() {
