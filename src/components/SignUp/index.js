@@ -32,7 +32,11 @@ class SignUpFormBase extends Component {
     }
 
     onSubmit = event => {
-        const { username, email, passwordOne, phone } = this.state;
+        var { username, email, passwordOne, phone } = this.state;
+        //Coverting email id to lowercase to avoid case sensitive issues between authentication and user email.
+        // Issue - https://github.com/vkivaturi/seatbooking/issues/1
+        
+        email = email.toLowerCase();
 
         this.props.firebase
             .doCreateUserWithEmailAndPassword(email, passwordOne)

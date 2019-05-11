@@ -47,7 +47,6 @@ class HomePage extends Component {
         this.state = { ...INITIAL_STATE };
     }
 
-
     componentDidMount() {
         //Fetch user details corresponding to the email id
         var email_id_loc = document.getElementById("email_field").value;
@@ -142,18 +141,6 @@ class HomePage extends Component {
 
             this.setState({ successMessage: availabilityStatus.message });
         }
-        //Add booking record to database
-        // this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
-        //     //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
-        //     if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
-        //         Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
-        //     }
-        //     this.setState({ ...INITIAL_STATE });
-        //     this.props.history.push(ROUTES.HOME);
-        //     this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });
-        // }).catch(error => {
-        //     this.setState({ error });
-        // });
 
         event.preventDefault();
 
@@ -301,7 +288,7 @@ class HomePage extends Component {
     }
 
     checkAndUpdateAvailableSeats = (pickup_date, route_trip, route_capacity) => {
-
+        //TO DO - Availability status is currently not used. actionNeeded field is utilized during submit stage.
         var actionNeeded = this.state.route_seats_action;
         var availabilityStatus = { isAvailable: false, message: '' };
 
@@ -318,7 +305,7 @@ class HomePage extends Component {
                 availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-success alert-dismissible" role="alert">Seats are available in this route. Please go ahead and book now!!</div></small>;
 
             }).catch(error => {
-                availabilityStatus.isAvailable = true;
+                availabilityStatus.isAvailable = false;
                 availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-warning alert-dismissible" role="alert">Error fetching seat availability details. You may still be able to book</div></small>;
             });
         } else if (actionNeeded === 'UPDATE') {
@@ -338,15 +325,14 @@ class HomePage extends Component {
 
         } else if (actionNeeded === 'REJECT') {
             availabilityStatus.isAvailable = false;
-            availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-danger alert-dismissible" role="alert">We are sorry, all seats are booked on this route for the selected date. Kindly contact support team in case you need further assistance</div></small>;
+            //Currently, only reject message is displayed on UI
+            availabilityStatus.message = <small class="form-text text-muted"><div class="alert alert-danger alert-dismissible" role="alert">We are sorry, all seats are booked on the route {route_trip} for the {pickup_date}. Kindly contact support team in case you need further assistance</div></small>;
         } else {
-            console.log("## Something went wrong in identifying the action needed on available seats");
+            console.log("## Something went wrong in identifying the action needed on available seats : " + pickup_date + " " + route_trip);
         }
 
         return availabilityStatus;
     }
-
-
 
     render() {
         const { email_id, password, error, route_trip, pickup_loc, drop_loc, successMessage, pickup_date } = this.state;
@@ -354,7 +340,7 @@ class HomePage extends Component {
         const isInvalid = pickup_date === '' || route_trip === '' || pickup_loc === '' || drop_loc === '';
 
         //Load trip time options
-        var route_trip_list = ['06-May', '07-May', '08-May', '09-May', '10-May'];
+        var route_trip_list = ['13-May', '14-May', '15-May', '16-May', '17-May'];
 
         var route_trip_options = Object.keys(route_trip_list).map(function(key) {
             return <option>{route_trip_list[key]}</option>
