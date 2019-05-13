@@ -17,6 +17,7 @@ const INITIAL_STATE = {
     error: null,
     successMessage: '',
     pickup_date: '',
+    pickup_date_options: '',
     pickup_loc_options: '',
     drop_loc_options: '',
     isOtherPickup: "disabled",
@@ -66,8 +67,8 @@ class HomePage extends Component {
             }
         });
 
-        //Load all routes
-        //this.fetchRoutes();
+        //Load all routes when the page loads for the first time
+        this.fetchRoutes();
     }
 
     componentWillUnmount() {
@@ -124,12 +125,17 @@ class HomePage extends Component {
                 this.setState({ ...INITIAL_STATE });
                 this.props.history.push(ROUTES.HOME);
                 this.setState({ successMessage: <div class="alert alert-success alert-dismissible" role="alert">Your booking is successful! You may check details in "My account" page</div> });
+                //Load all routes again after a booking is created since the earlier fetched routes are reset on submit
+                this.fetchRoutes();
+
             }).catch(error => {
                 this.setState({ error });
             });
 
             //TO DO - Hack to reset the date drop down
             document.getElementById("pickup_date").selectedIndex = 0;
+            document.getElementById("pickup_loc").selectedIndex = 0;
+            document.getElementById("drop_loc").selectedIndex = 0;
 
         } else {
             //No seats are available    
@@ -155,13 +161,13 @@ class HomePage extends Component {
         this.setState({ successMessage: '' });
 
         //Fetch all routes when pickup date is changed
-        if (event.target.name === 'pickup_date') {
-            this.fetchRoutes();
-        }
+        //        if (event.target.name === 'pickup_date') {
+        //this.fetchRoutes();
+        //        }
 
         //Fetch pickup and drop locations if route trip is changed
         if (event.target.name === 'route_trip') {
-            this.fetchLocations(event.target.value);
+            this.fetchRouteDetails(event.target.value);
         }
 
         //Manage the manual edit of pickup and drop options
@@ -210,37 +216,52 @@ class HomePage extends Component {
         });
     }
 
-    fetchLocations = (selectedRoute) => {
+    fetchRouteDetails = (selectedRoute) => {
         //Fetch pickup and drop locations for the selected
         var routesListLocal = this.state.routesList;
-        var pickup_loc_local, drop_loc_local, route_capacity_local;
+        var pickup_loc_local, drop_loc_local, route_capacity_local, pickup_date_local;
 
         // Reset pickup and drop list boxes
         this.setState({ pickup_loc_options: ' ' });
         this.setState({ drop_loc_options: ' ' });
+        this.setState({ pickup_date_options: ' ' });
 
         Object.keys(routesListLocal).map(function(key) {
             if (routesListLocal[key].route_trip === selectedRoute) {
                 pickup_loc_local = routesListLocal[key].pickup_locations;
                 drop_loc_local = routesListLocal[key].drop_locations;
                 route_capacity_local = routesListLocal[key].route_capacity;
+                pickup_date_local = routesListLocal[key].pickup_dates;
             }
         });
 
-        var location1 = pickup_loc_local.split(',');
-        var location1_options = Object.keys(location1).map(function(key) {
-            return <option>{location1[key]}</option>
-        });
+        //Ensure the selected route as valid pickup dates configured. Otherwise return an error message
+        if (typeof pickup_date_local !== 'undefined') {
+            //Split all comman separated strings into lists of pickup dates, pickup locations and drop locations
+            var pickup_date_temp = pickup_date_local.split(',');
+            var pickup_date_temp_options = Object.keys(pickup_date_temp).map(function(key) {
+                return <option>{pickup_date_temp[key]}</option>
+            });
 
-        var location2 = drop_loc_local.split(',');
-        var location2_options = Object.keys(location2).map(function(key) {
-            return <option>{location2[key]}</option>
-        });
+            var location1 = pickup_loc_local.split(',');
+            var location1_options = Object.keys(location1).map(function(key) {
+                return <option>{location1[key]}</option>
+            });
 
-        this.setState({ pickup_loc_options: location1_options });
-        this.setState({ drop_loc_options: location2_options });
-        this.setState({ route_capacity: route_capacity_local });
+            var location2 = drop_loc_local.split(',');
+            var location2_options = Object.keys(location2).map(function(key) {
+                return <option>{location2[key]}</option>
+            });
 
+            //Set all route details back to State variables so that the UI is refreshed again with new values
+            this.setState({ pickup_loc_options: location1_options });
+            this.setState({ drop_loc_options: location2_options });
+            this.setState({ route_capacity: route_capacity_local });
+            this.setState({ pickup_date_options: pickup_date_temp_options });
+
+        } else {
+            this.setState({ successMessage: <div class="alert alert-warning alert-dismissible" role="alert">There are no pickup dates for the selected trip. Please select another trip.</div> });
+        }
     }
 
     //This functions decides how to track seat availability for the specific date and route
@@ -340,11 +361,11 @@ class HomePage extends Component {
         const isInvalid = pickup_date === '' || route_trip === '' || pickup_loc === '' || drop_loc === '';
 
         //Load trip time options
-        var route_trip_list = ['13-May', '14-May', '15-May', '16-May', '17-May'];
+        // var route_trip_list = ['13-May', '14-May', '15-May', '16-May', '17-May'];
 
-        var route_trip_options = Object.keys(route_trip_list).map(function(key) {
-            return <option>{route_trip_list[key]}</option>
-        });
+        // var route_trip_options = Object.keys(route_trip_list).map(function(key) {
+        //     return <option>{route_trip_list[key]}</option>
+        // });
 
         return (
 
@@ -368,20 +389,20 @@ class HomePage extends Component {
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label for="pickup_date">Pickup date</label>
-                                        <select id="pickup_date" name="pickup_date" class="form-control" onChange={this.onChange}>
-                                            <option></option>
-                                            {route_trip_options}
-                                        </select>
-                                    </div>
-
                                     <label for="route_trip">Select your trip</label>
                                     <select id="route_trip" name="route_trip" class="form-control" onChange={this.onChange}>
                                         <option></option>
                                         {this.state.trip_slot_options}
 
                                     </select>
+
+                                    <div>
+                                        <label for="pickup_date">Pickup date</label>
+                                        <select id="pickup_date" name="pickup_date" class="form-control" onChange={this.onChange}>
+                                            <option></option>
+                                            {this.state.pickup_date_options}
+                                        </select>
+                                    </div>
 
                                     <label for="pickup_loc">Pickup location</label>
                                     <select id="pickup_loc" name="pickup_loc" class="form-control" onChange={this.onChange}>
