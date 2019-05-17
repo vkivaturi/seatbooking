@@ -5,71 +5,85 @@ import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
 
 const PasswordForgetPage = () => (
-  <div>
-    <h1>PasswordForget</h1>
-    <PasswordForgetForm />
-  </div>
+    <div>
+        <PasswordForgetForm />
+    </div>
 );
 
+const myDivStyle = {
+    border: '3px solid black',
+    width: '100%'
+};
+
 const INITIAL_STATE = {
-  email: '',
-  error: null,
+    email: '',
+    error: null,
 };
 
 class PasswordForgetFormBase extends Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = { ...INITIAL_STATE };
-  }
+        this.state = { ...INITIAL_STATE };
+    }
 
-  onSubmit = event => {
-    const { email } = this.state;
+    onSubmit = event => {
+        const { email } = this.state;
 
-    this.props.firebase
-      .doPasswordReset(email)
-      .then(() => {
-        this.setState({ ...INITIAL_STATE });
-      })
-      .catch(error => {
-        this.setState({ error });
-      });
+        this.props.firebase
+            .doPasswordReset(email)
+            .then(() => {
+                this.setState({ ...INITIAL_STATE });
+            })
+            .catch(error => {
+                this.setState({ error });
+            });
 
-    event.preventDefault();
-  };
+        event.preventDefault();
+    };
 
-  onChange = event => {
-    this.setState({ [event.target.name]: event.target.value });
-  };
+    onChange = event => {
+        this.setState({ [event.target.name]: event.target.value });
+    };
 
-  render() {
-    const { email, error } = this.state;
+    render() {
+        const { email, error } = this.state;
 
-    const isInvalid = email === '';
+        const isInvalid = email === '';
 
-    return (
-      <form onSubmit={this.onSubmit}>
-        <input
-          name="email"
-          value={this.state.email}
-          onChange={this.onChange}
-          type="text"
-          placeholder="Email Address"
-        />
-        <button disabled={isInvalid} type="submit">
-          Reset My Password
-        </button>
+        return (
+            <div class="card" style={myDivStyle}>
 
-        {error && <p>{error.message}</p>}
-      </form>
-    );
-  }
+                <div class="card-header">
+                    <h5>Reset your password. You will receive an email with reset instructions</h5> </div>
+                <div class="card-body" >
+
+                    <form onSubmit={this.onSubmit}>
+                        <input
+                            name="email"
+                            class="form-control"
+                            value={this.state.email}
+                            onChange={this.onChange}
+                            type="text"
+                            placeholder="Email Address"
+                        />
+                        <br/>
+                        <button disabled={isInvalid} class="btn btn-primary btn-lg btn-block" type="submit">
+                            Reset My Password
+                        </button>
+
+                        {error && <p>{error.message}</p>}
+                    </form>
+                </div>
+            </div>
+        );
+    }
 }
 
 const PasswordForgetLink = () => (
-  <p>
-    <Link to={ROUTES.PASSWORD_FORGET}>Forgot Password?</Link>
-  </p>
+    <p>
+        <Link to={ROUTES.PASSWORD_FORGET}>Forgot Password?</Link>
+    </p>
 );
 
 export default PasswordForgetPage;
