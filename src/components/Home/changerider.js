@@ -11,8 +11,12 @@ const config = {
 
 const INITIAL_STATE = {
     error: null,
-    successMessageCancelBooking: '',
+    successMessageRiderChange: '',
     selected_booking: '',
+    rider_phone: '',
+    rider_username: '',
+    bookings: [],
+    isBookingSelected: false,
 };
 
 const myDivStyle = {
@@ -21,7 +25,7 @@ const myDivStyle = {
 };
 
 //Add route with pickup and destination locations
-class CancelBooking extends Component {
+class ChangeRider extends Component {
     constructor(props) {
         super(props);
 
@@ -31,6 +35,9 @@ class CancelBooking extends Component {
             route_capacity: '',
             selected_booking: '',
             email_id: '',
+            rider_phone: '',
+            rider_username: '',
+            isBookingSelected: false,
         };
     }
 
@@ -46,14 +53,31 @@ class CancelBooking extends Component {
 
     onChange = event => {
         this.setState({ [event.target.name]: event.target.value });
-        this.setState({ successMessageCancelBooking: '' });
+        this.setState({ successMessageRiderChange: '' });
         this.setState({ error: '' });
+
+        //If a different booking is selected, update the input field for phone and username
+        if (event.target.name === 'selected_booking') {
+
+            this.setState({ isBookingSelected: true });
+
+            const { bookings } = this.state;
+
+            for (var i = 0; i < bookings.length; i++) {
+                if (bookings[i].uidbookingsid === event.target.value) {
+                    this.setState({ rider_username: bookings[i].username });
+                    this.setState({ rider_phone: bookings[i].phone });
+                }
+            }
+        }
     }
 
-    onCancelBooking = event => {
+    onChangeRider = event => {
         const {
             selected_booking,
             error,
+            rider_username,
+            rider_phone,
         } = this.state;
 
         var options = {
@@ -64,12 +88,14 @@ class CancelBooking extends Component {
 
         //Convert date into easy to read format
         var updation_date = new Intl.DateTimeFormat('en-US', options).format(Date.now());
-        var booking_status = 'CANCELLED';
-        console.log(updation_date, booking_status, selected_booking);
-        //Update booking status to cancelled
-        this.props.firebase.booking(selected_booking).update({ booking_status, updation_date }).then(() => {
+
+        var username = rider_username;
+        var phone = rider_phone;
+
+        //Update rider details in the database
+        this.props.firebase.booking(selected_booking).update({ username, phone, updation_date }).then(() => {
             this.setState({ ...INITIAL_STATE });
-            this.setState({ successMessageCancelBooking: <div class="alert alert-success alert-dismissible" role="alert">Selected booking is cancelled.</div> });
+            this.setState({ successMessageRiderChange: <div class="alert alert-success alert-dismissible" role="alert">Rider details are changed successfully for the selected booking.</div> });
         }).catch(error => {
             this.setState({ error });
         });
@@ -81,6 +107,9 @@ class CancelBooking extends Component {
         this.props.firebase.bookings().off();
         const login_email = this.state.email_id;
 
+        //Reset rider name, rider phone
+        this.setState({rider_phone: '', rider_username: '', isBookingSelected: false, successMessageRiderChange: ''});
+
         this.props.firebase.db.ref("bookings").orderByChild("pickup_date").equalTo(this.state.pickup_date).on('value', snapshot => {
             const bookingsObject = snapshot.val();
 
@@ -91,13 +120,21 @@ class CancelBooking extends Component {
                     uidbookingsid: key,
                 }));
 
+                var bookingsListUserFilter = bookingsList;
+                var bookingsListStatusFilter = bookingsList;
+
                 //If user is not an admin, display only bookings made by self
                 if (config.admins.toUpperCase().indexOf(this.state.email_id.toUpperCase()) === -1) {
-                    var bookingsListLocal = bookingsList.filter(function(booking) {
+                    bookingsListUserFilter = bookingsList.filter(function(booking) {
                         return booking.email_id.toUpperCase() === login_email.toUpperCase()
                     });
-                    bookingsList = bookingsListLocal;
                 }
+
+                bookingsListStatusFilter = bookingsListUserFilter.filter(function(booking) {
+                    return booking.booking_status === 'CONFIRMED'
+                });
+
+                bookingsList = bookingsListStatusFilter;
 
                 this.setState({
                     bookings: bookingsList,
@@ -115,9 +152,9 @@ class CancelBooking extends Component {
         return (
             <tr key={index}>
                 <td><input type="radio" name="selected_booking" value={booking.uidbookingsid} onChange={this.onChange} /></td>
-                <td>{booking.username} --> {booking.pickup_date} --> {booking.route_trip} --> {booking.pickup_loc} --> {booking.drop_loc}</td>
-                <td>{booking.booking_status}</td>
-                <td>{booking.creation_date}</td>
+                <td>{booking.username}</td>
+                <td>{booking.phone}</td>
+                <td>{booking.pickup_date} --> {booking.route_trip} --> {booking.pickup_loc} --> {booking.drop_loc}</td>
             </tr>
         )
     }
@@ -127,21 +164,23 @@ class CancelBooking extends Component {
         const { bookings } = this.state;
 
         const {
-            successMessageCancelBooking,
+            successMessageRiderChange,
             selected_booking,
-            error
+            error,
+            rider_phone,
+            rider_username
         } = this.state;
 
-        var isInvalidCancel = selected_booking === '';
+        var isInvalidRider = rider_phone === '' || rider_username === '';
 
         return (
             <AuthUserContext.Consumer>
                 {authUser => (
                     <div class="card" style={myDivStyle}>
-                        <div id="successMessageId">{successMessageCancelBooking}</div>
+                        <div id="successMessageId">{successMessageRiderChange}</div>
 
                         <div class="card-body" >
-
+                            <p>In this page, you can select change rider details of a booking with CONFIRMED status.</p>
                             <div class="form-group">
                                 <div class="form-row">
                                     <div class="col">
@@ -165,18 +204,45 @@ class CancelBooking extends Component {
                                     <thead>
                                         <tr>
                                             <th>Select</th>
+                                            <th>Rider name</th>
+                                            <th>Phone number</th>
                                             <th>Booking details</th>
-                                            <th>Status</th>
-                                            <th>Booking time</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {bookings.map(this.renderBookings)}
                                     </tbody>
                                 </Table>
+
                                 <div class="form-row">
-                                    <button disabled={isInvalidCancel} class="btn btn-warning btn-lg btn-block" onClick={this.onCancelBooking}>
-                                        Cancel booking
+                                    <label>Rider name</label>
+                                    <input
+                                        class="form-control"
+                                        name="rider_username"
+                                        value={this.state.rider_username}
+                                        onChange={this.onChange}
+                                        type="text"
+                                        id="rider_name"
+                                        disabled={!this.state.isBookingSelected}
+                                    />
+                                </div>
+
+                                <div class="form-row">
+                                    <label>Rider phone number</label>
+                                    <input
+                                        class="form-control"
+                                        name="rider_phone"
+                                        value={this.state.rider_phone}
+                                        onChange={this.onChange}
+                                        type="text"
+                                        id="rider_phone"
+                                        disabled={!this.state.isBookingSelected}
+                                    />
+                                </div>
+                                <p></p>
+                                <div class="form-row">
+                                    <button disabled={isInvalidRider} class="btn btn-primary btn-lg btn-block" onClick={this.onChangeRider}>
+                                        Change rider
                             </button>
                                 </div>
                                 {error && <p>{error.message}</p>}
@@ -189,4 +255,4 @@ class CancelBooking extends Component {
 }
 
 // Exporting the component 
-export default withFirebase(CancelBooking);
+export default withFirebase(ChangeRider);

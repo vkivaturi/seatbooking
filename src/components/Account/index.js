@@ -72,7 +72,12 @@ class AccountPage extends Component {
             Header: 'Drop location',
             accessor: 'drop_loc',
 
-        }, {
+        }, 
+        {
+            Header: 'Status',
+            accessor: 'booking_status',
+        },
+        {
             Header: 'Booking time',
             accessor: 'creation_date',
         }]

@@ -5,6 +5,7 @@ import Tab from 'react-bootstrap/Tab';
 import { AuthUserContext, withAuthorization } from '../Session';
 import BookSeat from './bookseat.js';
 import CancelBooking from './cancelbooking.js';
+import ChangeRider from './changerider.js';
 
 import { withFirebase } from '../Firebase';
 //import * as ROUTES from '../../constants/routes';
@@ -33,6 +34,9 @@ class HomePage extends Component {
                     </Tab>
                     <Tab eventKey="cancelbooking" title="Cancel booking">
                         <CancelBooking />
+                    </Tab>
+                    <Tab eventKey="changerider" title="Change rider">
+                        <ChangeRider />
                     </Tab>
 
                 </Tabs>

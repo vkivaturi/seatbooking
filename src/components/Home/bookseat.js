@@ -96,6 +96,7 @@ class BookSeatPage extends Component {
         var creation_date = new Intl.DateTimeFormat('en-US', options).format(Date.now());
         var username = '';
         var phone = '';
+        var booking_status = 'CONFIRMED';
 
         var userListNew = this.state.users_all;
 
@@ -117,7 +118,7 @@ class BookSeatPage extends Component {
         //if (availabilityStatus.isAvailable) {
         if (this.state.route_seats_action === 'CREATE' || this.state.route_seats_action === 'UPDATE') {
             //Add booking record to database
-            this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id }).then(() => {
+            this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id, booking_status }).then(() => {
                 //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
                 if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
                     Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);

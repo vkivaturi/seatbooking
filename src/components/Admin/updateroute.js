@@ -70,7 +70,6 @@ class UpdateRoute extends Component {
 
             //Fetch pickup and drop locations for the selected route
             Object.keys(routesListLocal).map(function(key) {
-                console.log(routesListLocal[key]);
                 if (routesListLocal[key].route_trip === event.target.value) {
                     pickup_loc_local = routesListLocal[key].pickup_locations;
                     drop_loc_local = routesListLocal[key].drop_locations;
@@ -99,7 +98,7 @@ class UpdateRoute extends Component {
         } = this.state;
 
         var updatedDate = UTILS.formattedCurrentDate();
-        console.log(pickup_dates + route_trip + pickup_locations + drop_locations + creation_date + route_capacity + updatedDate);
+
         //Update the selected route
         this.props.firebase.route(routes_key).set({ pickup_dates, route_trip, pickup_locations, drop_locations, creation_date, route_capacity, updatedDate }).then(() => {
             this.setState({ ...INITIAL_STATE });
