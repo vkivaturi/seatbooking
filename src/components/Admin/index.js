@@ -132,7 +132,7 @@ class AdminPage extends Component {
             Header: 'Drop location',
             accessor: 'drop_loc',
 
-        },  {
+        }, {
             Header: 'Status',
             accessor: 'booking_status',
 
@@ -144,67 +144,76 @@ class AdminPage extends Component {
         }];
 
         return (
-            <div>
-                <Tabs defaultActiveKey="bookings">
-                    <Tab eventKey="bookings" title="Bookings">
-                        <div id="bookings">
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
-                                    <div class="input-group-append">
-                                        <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
-                                    </div>
-                                </div>
+            <AuthUserContext.Consumer>
+                {authUser => (
+                    <div>
+                        <div>
+                            {config.admins.toUpperCase().indexOf(authUser.email.toUpperCase()) !== -1 ?
+                                <Tabs defaultActiveKey="bookings">
+                                    <Tab eventKey="bookings" title="Bookings">
+                                        <div id="bookings">
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
+                                                </div>
+                                            </div>
 
-                                <ReactTable
-                                    data={bookings} columns={columnsBooking} filterable='true' defaultPageSize='20'
-                                />
-                            </div>
+                                            <ReactTable
+                                                data={bookings} columns={columnsBooking} filterable='true' defaultPageSize='20'
+                                            />
+                                        </div>
 
-                    </Tab>
-                    <Tab eventKey="listusers" title="Users">
-                        <div class="card" style={myDivStyle} id="listusers">
-                            <div class="card-header">
-                                Registered users </div>
-                            <div class="card-body" >
-                                <button class="btn btn-primary btn-lg btn-block" onClick={this.fetchUsers}>
-                                    Fetch Users</button><br/>
-                                <ReactTable
-                                    data={users} columns={columnsUser} filterable='true' defaultPageSize='20'
-                                />
-                            </div>
-                        </div>
-                    </Tab>
-                    <Tab eventKey="addroute" title="Add route">
-                        <div class="card" style={myDivStyle} id="addroute">
-                            <div class="card-header">
-                                Add new route </div>
-                            <div class="card-body" >
-                                <AddRoute />
-                            </div>
-                        </div>
-                    </Tab>
-                    <Tab eventKey="updateroute" title="Update route">
-                        <div class="card" style={myDivStyle} id="updateroute">
-                            <div class="card-header">
-                                Update existing route </div>
-                            <div class="card-body" >
-                                <UpdateRoute />
-                            </div>
-                        </div>
+                                    </Tab>
+                                    <Tab eventKey="listusers" title="Users">
+                                        <div class="card" style={myDivStyle} id="listusers">
+                                            <div class="card-header">
+                                                Registered users </div>
+                                            <div class="card-body" >
+                                                <button class="btn btn-primary btn-lg btn-block" onClick={this.fetchUsers}>
+                                                    Fetch Users</button><br />
+                                                <ReactTable
+                                                    data={users} columns={columnsUser} filterable='true' defaultPageSize='20'
+                                                />
+                                            </div>
+                                        </div>
+                                    </Tab>
+                                    <Tab eventKey="addroute" title="Add route">
+                                        <div class="card" style={myDivStyle} id="addroute">
+                                            <div class="card-header">
+                                                Add new route </div>
+                                            <div class="card-body" >
+                                                <AddRoute />
+                                            </div>
+                                        </div>
+                                    </Tab>
+                                    <Tab eventKey="updateroute" title="Update route">
+                                        <div class="card" style={myDivStyle} id="updateroute">
+                                            <div class="card-header">
+                                                Update existing route </div>
+                                            <div class="card-body" >
+                                                <UpdateRoute />
+                                            </div>
+                                        </div>
 
-                    </Tab>
-                    <Tab eventKey="deleteroute" title="Delete route">
-                        <div class="card" style={myDivStyle} id="deleteroute">
-                            <div class="card-header">
-                                Delete existing route </div>
-                            <div class="card-body" >
-                                <DeleteRoute />
-                            </div>
-                        </div>
+                                    </Tab>
+                                    <Tab eventKey="deleteroute" title="Delete route">
+                                        <div class="card" style={myDivStyle} id="deleteroute">
+                                            <div class="card-header">
+                                                Delete existing route </div>
+                                            <div class="card-body" >
+                                                <DeleteRoute />
+                                            </div>
+                                        </div>
 
-                    </Tab>
-                </Tabs>
-            </div>
+                                    </Tab>
+                                </Tabs>
+                                : <h4>You are not authorized to access this page</h4>}
+                        </div>
+                    </div>
+                )}
+            </AuthUserContext.Consumer>
+
         );
     }
 }

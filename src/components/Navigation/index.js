@@ -20,7 +20,7 @@ const Navigation = () => (
   <div>
     <AuthUserContext.Consumer>
       {authUser =>
-        authUser ? (config.admins.toUpperCase().indexOf(authUser.email.toUpperCase()) ==! -1 ? <NavigationAdminAuth /> : <NavigationAuth />) : (<NavigationNonAuth />)
+        authUser ? (config.admins.toUpperCase().indexOf(authUser.email.toUpperCase()) !== -1 ? <NavigationAdminAuth /> : <NavigationAuth />) : (<NavigationNonAuth />)
       }
     </AuthUserContext.Consumer>
   </div>
