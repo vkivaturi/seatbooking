@@ -67,6 +67,23 @@ class BookSeatPage extends Component {
             }
         });
 
+        //Load preferences for the user. This will be a list with just one element
+        var test = "~!@#$%^&*()_-+=[{]}\|;:,<.>/?";
+        this.props.firebase.db.ref("preferences").orderByKey().equalTo(Utils.encodeEmailIdForFirebaseKey(email_id_loc)).on('value', snapshot => {
+            const prefsObject = snapshot.val();
+            if (prefsObject !== null) {
+                const prefsList = Object.keys(prefsObject).map(key => ({
+                    ...prefsObject[key],
+                    prefid: key,
+                }));
+                this.setState({
+                    preferences_all: prefsList,
+                });
+            } else {
+                console.log("### No preference info found for email id : " + email_id_loc);
+            }
+        });
+
         //Load all routes when the page loads for the first time
         this.fetchRoutes();
     }
@@ -121,7 +138,7 @@ class BookSeatPage extends Component {
             this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id, booking_status }).then(() => {
                 //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
                 if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
-                    Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id);
+                    Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id, 'CONFIRM_BOOKING');
                 }
                 this.setState({ ...INITIAL_STATE });
                 this.props.history.push(ROUTES.HOME);
@@ -129,6 +146,13 @@ class BookSeatPage extends Component {
                 //Load all routes again after a booking is created since the earlier fetched routes are reset on submit
                 this.fetchRoutes();
 
+            }).catch(error => {
+                this.setState({ error });
+            });
+
+            var loc_pref = pickup_loc + "," + drop_loc;
+            this.props.firebase.preference(Utils.encodeEmailIdForFirebaseKey(email_id)).update({ [route_trip]: loc_pref }).then(() => {
+                //Do nothing on succesful update
             }).catch(error => {
                 this.setState({ error });
             });
@@ -161,10 +185,11 @@ class BookSeatPage extends Component {
         });
         this.setState({ successMessage: '' });
 
-        //Fetch all routes when pickup date is changed
-        //        if (event.target.name === 'pickup_date') {
-        //this.fetchRoutes();
-        //        }
+        //Overloading this event since there is no other way to load firebase data for seat checking availability. 
+        //It is not possible to load seat availability data and perform checks on submit due to asynchronous nature of firebase API calls
+        if (event.target.name === 'pickup_date') {
+            this.decideActionOnAvailability(event.target.value, this.state.route_trip, this.state.route_capacity);
+        }
 
         //Fetch pickup and drop locations if route trip is changed
         if (event.target.name === 'route_trip') {
@@ -173,9 +198,6 @@ class BookSeatPage extends Component {
 
         //Manage the manual edit of pickup and drop options
         if (event.target.name === 'pickup_loc') {
-            //Overloading this event since there is no other way to load firebase data for seat checking availability. 
-            //It is not possible to load seat availability data and perform checks on submit due to asynchronous nature of firebase API calls
-            this.decideActionOnAvailability(this.state.pickup_date, this.state.route_trip, this.state.route_capacity);
 
             if (event.target.value === '==Other pickup location==') {
                 this.setState({ isOtherPickup: "" });
@@ -244,14 +266,28 @@ class BookSeatPage extends Component {
                 return <option>{pickup_date_temp[key]}</option>
             });
 
+            //Check if the user has any preferred locations based on past booking
+            var prefLocs = Utils.fetchPreferredLocationsForRoute(this.state.preferences_all, selectedRoute);
+            var selectedPickup = false, selectedDrop = false;
+
             var location1 = pickup_loc_local.split(',');
             var location1_options = Object.keys(location1).map(function(key) {
-                return <option>{location1[key]}</option>
+                if (location1[key] === prefLocs.pickup_loc) {
+                    selectedPickup = true;
+                    return <option selected>{location1[key]}</option>
+                } else {
+                    return <option>{location1[key]}</option>
+                }
             });
 
             var location2 = drop_loc_local.split(',');
             var location2_options = Object.keys(location2).map(function(key) {
-                return <option>{location2[key]}</option>
+                if (location2[key] === prefLocs.drop_loc) {
+                    selectedDrop = true;
+                    return <option selected>{location2[key]}</option>
+                } else {
+                    return <option>{location2[key]}</option>
+                }
             });
 
             //Set all route details back to State variables so that the UI is refreshed again with new values
@@ -260,6 +296,9 @@ class BookSeatPage extends Component {
             this.setState({ route_capacity: route_capacity_local });
             this.setState({ pickup_date_options: pickup_date_temp_options });
 
+            // Set pickup and drop locations only if the user has preferences set and are currently valid
+            if (selectedPickup) this.setState({ pickup_loc: prefLocs.pickup_loc });
+            if (selectedDrop) this.setState({ drop_loc: prefLocs.drop_loc });
         } else {
             this.setState({ successMessage: <div class="alert alert-warning alert-dismissible" role="alert">There are no pickup dates for the selected trip. Please select another trip.</div> });
         }
@@ -360,13 +399,6 @@ class BookSeatPage extends Component {
         const { email_id, password, error, route_trip, pickup_loc, drop_loc, successMessage, pickup_date } = this.state;
 
         const isInvalid = pickup_date === '' || route_trip === '' || pickup_loc === '' || drop_loc === '';
-
-        //Load trip time options
-        // var route_trip_list = ['13-May', '14-May', '15-May', '16-May', '17-May'];
-
-        // var route_trip_options = Object.keys(route_trip_list).map(function(key) {
-        //     return <option>{route_trip_list[key]}</option>
-        // });
 
         return (
 

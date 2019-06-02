@@ -50,6 +50,10 @@ class Firebase {
     seat = seatid => this.db.ref(`seats/${seatid}`);
     seats = () => this.db.ref('seats');
 
+    // *** User preferences API ***
+    preference = email_id => this.db.ref(`preferences/${email_id}`);
+    preferences = () => this.db.ref('preferences');
+
 }
 
 export default Firebase;

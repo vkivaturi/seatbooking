@@ -14,10 +14,10 @@ module.exports = {
         return new Intl.DateTimeFormat('en-US', options).format(Date.now());
 
     },
-    sendElasticEmail: function(route_trip, username, pickup_date, pickup_loc, drop_loc, to_email) {
+
+    sendElasticEmail: function(route_trip, username, pickup_date, pickup_loc, drop_loc, to_email, user_action) {
 
         // Make sure to add your username and api_key below.
-        console.log("to_email + " + to_email);
         const config = {
             admins: process.env.REACT_APP_ADMINS,
             contact_email: process.env.REACT_APP_CONTACT_EMAIL,
@@ -27,39 +27,25 @@ module.exports = {
             email_key: process.env.REACT_APP_ELASTIC_EMAIL_API_KEY
         };
 
-        //Create subject line
-        const subject = "Confirmation --> " + pickup_date + " : " + pickup_loc + " : " + drop_loc + " : " + route_trip;
+        //Create email text and subject based on user action
+        var subject, textEmail;
 
-        var textEmail = "Hi " + username + ",  \n\nThanks a lot for booking your seat with " + config.business_name + ". " + subject + ". \n\nIn case you have any questions related to this booking or if you want to cancel it, please email us at " + config.contact_email + " or WhatsApp at " + config.contact_phone + "\n\n";
+//        switch (user_action) {
+//            case 'CONFIRM_BOOKING':
+                subject = "Confirmation --> " + pickup_date + " : " + pickup_loc + " : " + drop_loc + " : " + route_trip;
+                textEmail = "Hi " + username + ",  \n\nThanks a lot for booking your seat with " + config.business_name + ". " + subject + ". \n\nIn case you have any questions related to this booking, please email us at " + config.contact_email + " or WhatsApp at " + config.contact_phone + "\n\nIn case you want to cancel this booking, you can do so in the Book My Seat --> Cancel booking page";
+//            case 'CANCEL_BOOKING':
+//                subject = "Cancellation --> " + pickup_date + " : " + pickup_loc + " : " + drop_loc + " : " + route_trip;
+//                textEmail = "Hi " + username + ",  \n\nYour booking" + subject + " with us is cancelled. \n\nIn case you want to rebook, please go the web portal and book a new seat using Book My Seat page \n\n";
+//            case 'NEW_USER':
+//                subject = config.business_name + "welcomes you " + username + "!";
+//                textEmail = "Hi " + username + ",  \n\nThanks a lot for registering with " + config.business_name + ". This booking portal helps you book seats in shuttles on various routes. In case you have any questions related, please email us at " + config.contact_email + " or WhatsApp at " + config.contact_phone;
+//        }
 
-        const htmlEmailEncoded = "&#x3C;html&#x3E;&#x3C;p&#x3E;Hi &#x3C;strong&#x3E;{username}&#x3C;/strong&#x3E;,&#x3C;/p&#x3E; &#x3C;p&#x3E;Thanks a lot for booking your seat with {config.business_name}. Please find below the details of your confirmed booking.&#x3C;/p&#x3E; &#x3C;table style=&#x22;height: 93px; width: 455px;&#x22; border=&#x22;1&#x22;&#x3E; &#x3C;tbody&#x3E; &#x3C;tr&#x3E; &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Pickup date&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{pickup_date}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;tr&#x3E; &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Trip details&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{route_trip}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;tr&#x3E; &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Pickup location&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{pickup_loc}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;tr&#x3E;  &#x3C;td style=&#x22;width: 122px;&#x22;&#x3E;Drop location&#x3C;/td&#x3E; &#x3C;td style=&#x22;width: 319px;&#x22;&#x3E;{drop_loc}&#x3C;/td&#x3E; &#x3C;/tr&#x3E; &#x3C;/tbody&#x3E; &#x3C;/table&#x3E; &#x3C;p&#x3E;In case you have any questions related to this booking or if you want to cancel it, please email us at {config.contact_email} or WhatsApp at {config.contact_phone}.&#x3C;/p&#x3E; &#x3C;p&#x3E;Enjoy your ride!&#x3C;/p&#x3E; &#x3C;p&#x3E;Thank you.&#x3C;/p&#x3E; &#x3C;p&#x3E;Team {config.business_name}&#x3C;/p&#x3E;&#x3C;/html&#x3E";       //Create email body html
-        
-        const htmlEmail = <html><p>Hi <strong>{username}</strong>,</p>
-            <p>Thanks a lot for booking your seat with {config.business_name}. Please find below the details of your confirmed booking.</p>
-            <table style="height: 93px; width: 455px;" border="1">
-                <tbody>
-                    <tr>
-                        <td style="width: 122px;">Pickup date</td>
-                        <td style="width: 319px;">{pickup_date}</td>
-                    </tr>
-                    <tr>
-                        <td style="width: 122px;">Trip details</td>
-                        <td style="width: 319px;">{route_trip}</td>
-                    </tr>
-                    <tr>
-                        <td style="width: 122px;">Pickup location</td>
-                        <td style="width: 319px;">{pickup_loc}</td>
-                    </tr>
-                    <tr>
-                        <td style="width: 122px;">Drop location</td>
-                        <td style="width: 319px;">{drop_loc}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p>In case you have any questions related to this booking or if you want to cancel it, please email us at {config.contact_email} or WhatsApp at {config.contact_phone}.</p>
-            <p>Enjoy your ride!</p>
-            <p>Thank you.</p>
-            <p>Team {config.business_name}</p></html>;
+
+        // const subject = "Confirmation --> " + pickup_date + " : " + pickup_loc + " : " + drop_loc + " : " + route_trip;
+
+        // var textEmail = "Hi " + username + ",  \n\nThanks a lot for booking your seat with " + config.business_name + ". " + subject + ". \n\nIn case you have any questions related to this booking or if you want to cancel it, please email us at " + config.contact_email + " or WhatsApp at " + config.contact_phone + "\n\n";
 
         console.log(config.contact_email + config.business_name + to_email + subject + textEmail);
 
@@ -102,10 +88,37 @@ module.exports = {
             });
         });
 
-        // Post to Elastic Email
+        //Post to Elastic Email
         post_req.write(post_data);
         post_req.end();
         return result;
     },
 
+    encodeEmailIdForFirebaseKey: function(email_id) {
+        //Using email id as Firebase key is creating problems due to special characters. Hence encoding it.
+        var encodedEmail = email_id.replace(/\W/g, ',');
+        
+        return encodedEmail;
+    },
+
+    //Fetch the preferred pickup and drop location based on route trip used in previous booking by the user
+    fetchPreferredLocationsForRoute: function(prefsList, route_trip) {
+        var prefLocs = [];
+
+        if (typeof prefsList !== 'undefined') {
+            Object.keys(prefsList).forEach(function(key) {
+                var prefPickDrop = prefsList[key][route_trip];
+                if (typeof prefPickDrop !== 'undefined') {
+                    var prefPickDropList = prefPickDrop.split(',');
+                    prefLocs.pickup_loc = prefPickDropList[0];
+                    prefLocs.drop_loc = prefPickDropList[1];
+                } else {
+                    console.log("## No pick/drop preferences for this route trip");
+                }
+            });
+        } else {
+            console.log("### Preferences list is empty for email id");
+        }
+    return prefLocs;
+    }
 }
