@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import ReactTable from 'react-table';
 import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
+import { ExportToCsv } from 'export-to-csv';
 
 import 'react-table/react-table.css';
 import { AuthUserContext, withAuthorization } from '../Session';
@@ -68,6 +69,26 @@ class AdminPage extends Component {
                 });
             }
         });
+    }
+
+    //Function to download bookings data as a CSV file
+    exportBookings = () => {
+        const options = {
+            fieldSeparator: ',',
+            quoteStrings: '"',
+            decimalSeparator: '.',
+            showLabels: true,
+            showTitle: true,
+            title: this.state.pickup_date + '-' + Date.now(),
+            useTextFile: false,
+            useBom: true,
+            useKeysAsHeaders: true,
+            //headers: ['Status', 'Booking time', 'Phone number', 'Pickup date', 'Trip', 'Pickup location', 'Drop location', 'Status', 'Booking time']
+        };
+
+        const csvExporter = new ExportToCsv(options);
+
+        csvExporter.generateCsv(JSON.stringify(this.state.bookings));
     }
 
     fetchUsers = () => {
@@ -142,6 +163,9 @@ class AdminPage extends Component {
             accessor: 'creation_date',
 
         }];
+        
+        //Disable download button if no bookings for the search criteria
+        var isNoBookings = this.state.bookings.length === 0;
 
         return (
             <AuthUserContext.Consumer>
@@ -155,7 +179,9 @@ class AdminPage extends Component {
                                             <div class="input-group mb-3">
                                                 <input type="text" class="form-control" name="pickup_date" onChange={this.onChange} placeholder="Pickup date like 03-May" aria-describedby="basic-addon2" />
                                                 <div class="input-group-append">
-                                                    <button class="btn btn-primary" type="button" onClick={this.fetchBookings} >Search bookings</button>
+                                                    <button class="btn btn-primary border border-white" type="button" onClick={this.fetchBookings} >Search bookings</button>
+                                                    <button class="btn btn-success border border-white" type="button" disabled={isNoBookings} onClick={this.exportBookings} >Download bookings</button>
+
                                                 </div>
                                             </div>
 
