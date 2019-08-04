@@ -31,6 +31,7 @@ const INITIAL_STATE = {
     route_seats_creation_date: '',
     route_seats_seatid: '',
     route_seats_action: '',
+    isAvailable: true,
 };
 
 const myDivStyle = {
@@ -102,6 +103,8 @@ class BookSeatPage extends Component {
 
         var pickup_loc = (this.state.otherPickup != '') ? this.state.otherPickup : pickup_loc;
         var drop_loc = (this.state.otherDrop != '') ? this.state.otherDrop : drop_loc;
+        //Creating a new field that will be used to search bookings on a particular day and trip. This helps to check the number of bookings.
+        var route_trip_pickup_date = route_trip + pickup_date;
 
         var options = {
             year: 'numeric', month: 'numeric', day: 'numeric',
@@ -129,13 +132,17 @@ class BookSeatPage extends Component {
         }
 
         //Check if the selected route has seat availability
-        availabilityStatus = this.checkAndUpdateAvailableSeats(pickup_date, route_trip, this.state.route_capacity);
+        // new comment
+        //availabilityStatus = this.checkAndUpdateAvailableSeats(pickup_date, route_trip, this.state.route_capacity);
 
         //Check based on isAvailable is failing again as we cannot trigger 2 sequential calls with Firebase
         //if (availabilityStatus.isAvailable) {
-        if (this.state.route_seats_action === 'CREATE' || this.state.route_seats_action === 'UPDATE') {
+        // new comment
+        //if (this.state.route_seats_action === 'CREATE' || this.state.route_seats_action === 'UPDATE') {
+
+        if (true) {
             //Add booking record to database
-            this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id, booking_status }).then(() => {
+            this.props.firebase.booking(Date.now()).set({ username, phone, pickup_date, route_trip, pickup_loc, drop_loc, creation_date, email_id, booking_status, route_trip_pickup_date }).then(() => {
                 //Do not send emails if the user is admin. Assumption is admins book requests only for testing purpose.
                 if (config.admins.toUpperCase().indexOf(email_id.toUpperCase()) === -1) {
                     Utils.sendElasticEmail(route_trip, username, pickup_date, pickup_loc, drop_loc, email_id, 'CONFIRM_BOOKING');
@@ -188,7 +195,10 @@ class BookSeatPage extends Component {
         //Overloading this event since there is no other way to load firebase data for seat checking availability. 
         //It is not possible to load seat availability data and perform checks on submit due to asynchronous nature of firebase API calls
         if (event.target.name === 'pickup_date') {
-            this.decideActionOnAvailability(event.target.value, this.state.route_trip, this.state.route_capacity);
+            // new comment
+            //this.decideActionOnAvailability(event.target.value, this.state.route_trip, this.state.route_capacity);
+
+            this.isBookingsLimitReached(event.target.value, this.state.route_trip, this.state.route_capacity);
         }
 
         //Fetch pickup and drop locations if route trip is changed
@@ -304,6 +314,32 @@ class BookSeatPage extends Component {
         }
     }
 
+    //Check if bookings are available for the selected date and route
+    isBookingsLimitReached = (pickup_date, route_trip, route_capacity) => {
+        var route_trip_pickup_date_local = route_trip + pickup_date;
+
+        this.props.firebase.db.ref("bookings").orderByChild("route_trip_pickup_date").equalTo(route_trip_pickup_date_local).on('value', snapshot => {
+            const bookingsObject = snapshot.val();
+            if (bookingsObject != null) {
+                var bookingsList = Object.keys(bookingsObject).map(key => ({
+                    ...bookingsObject[key],
+                    uidbookingsid: key,
+                }));
+                //Include only those bookings that are in CONFIRMED status
+                var bookingsListLocal = bookingsList.filter(function(booking) {
+                    return booking.booking_status.toUpperCase() === 'CONFIRMED'
+                });
+                bookingsList = bookingsListLocal;
+                console.log("## Bookings list for route and date size : " + bookingsList.length + "::" + route_capacity);
+                if (bookingsList.length >= route_capacity) {
+                    this.setState({ successMessage: <small class="form-text text-muted"><div class="alert alert-danger alert-dismissible" role="alert">We are sorry, all seats are booked on the route {route_trip} for the {pickup_date}. Kindly contact support team in case you need further assistance</div></small> });
+                    this.setState({ isAvailable: false });
+                }
+            }
+        });
+    }
+
+// DELETE THIS FUNCTION
     //This functions decides how to track seat availability for the specific date and route
     decideActionOnAvailability = (pickup_date, route_trip, route_capacity) => {
         //Fetch all routes for the given date and set the action flag based on date+route+seats situation
@@ -348,6 +384,7 @@ class BookSeatPage extends Component {
         });
     }
 
+// DELETE THIS
     checkAndUpdateAvailableSeats = (pickup_date, route_trip, route_capacity) => {
         //TO DO - Availability status is currently not used. actionNeeded field is utilized during submit stage.
         var actionNeeded = this.state.route_seats_action;
@@ -396,9 +433,9 @@ class BookSeatPage extends Component {
     }
 
     render() {
-        const { email_id, password, error, route_trip, pickup_loc, drop_loc, successMessage, pickup_date } = this.state;
+        const { email_id, password, error, route_trip, pickup_loc, drop_loc, successMessage, pickup_date, isAvailable } = this.state;
 
-        const isInvalid = pickup_date === '' || route_trip === '' || pickup_loc === '' || drop_loc === '';
+        const isInvalid = pickup_date === '' || route_trip === '' || pickup_loc === '' || drop_loc === '' || !isAvailable;
 
         return (
 
